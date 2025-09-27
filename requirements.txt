@@ -18,6 +18,9 @@ scikit-image>=0.19.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
 
+# Medical imaging file format support (for external dataset testing)
+nibabel>=3.2.0
+
 # File handling and utilities
 tqdm>=4.64.0
 pillow>=9.0.0
