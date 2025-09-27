@@ -12,12 +12,11 @@ tags:
   - MIMIC-IV-ECHO
   - PhysioNet
 authors:
-  - name: [Your Name]
-    orcid: [Your ORCID ID - get from https://orcid.org]
-    equal-contrib: true
-    affiliation: "1"
+  - name: Kamlin Kambaram
+    orcid: 0000-0000-0000-0000
+    affiliation: 1
 affiliations:
- - name: [Your Institution/University]
+ - name: Independent Researcher
    index: 1
 date: 27 September 2025
 bibliography: paper.bib
@@ -76,15 +75,16 @@ The software provides a complete processing pipeline:
 
 ## Software Architecture
 
-The package is structured as a modular Python library with the following components:
+The software is implemented as a comprehensive Jupyter notebook containing:
 
-- **Core Segmentation Engine** (`UNetROISegmenter`): Main class providing high-level interface
-- **Preprocessing Utilities**: Image loading, resizing, and normalization functions
-- **Inference Pipeline**: Single image and batch processing capabilities
-- **Evaluation Metrics**: Comprehensive assessment tools including Dice score, IoU, and pixel accuracy
-- **Visualization Tools**: Functions for displaying results and analyzing model performance
+- **Data Processing Pipeline**: Automated loading, preprocessing, and augmentation of ultrasound images
+- **U-Net Model Implementation**: Complete encoder-decoder architecture with skip connections
+- **Training Framework**: Configurable training with callbacks, metrics tracking, and model checkpointing
+- **Evaluation Tools**: Comprehensive metrics including Dice score, IoU, and pixel accuracy
+- **Inference Pipeline**: Single image and batch processing for new ultrasound images
+- **Visualization Components**: Interactive plots and overlays for result analysis
 
-The implementation uses TensorFlow/Keras as the deep learning backend and integrates seamlessly with standard medical imaging workflows using common Python libraries (OpenCV, NumPy, Matplotlib).
+The implementation uses TensorFlow/Keras as the deep learning backend and integrates with standard scientific Python libraries (OpenCV, NumPy, Matplotlib, Scikit-learn) for a complete medical imaging workflow.
 
 # Performance and Validation
 
