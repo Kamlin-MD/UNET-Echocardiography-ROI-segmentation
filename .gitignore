@@ -127,3 +127,33 @@ unet_architecture.png
 processed_frames/
 videos/
 *.avi
+*.mp4
+*.mov
+
+# Test outputs and temporary results
+test_results/
+output/
+results/
+predictions/
+*_output/
+*_results/
+
+# Development artifacts
+.coverage
+.pytest_cache/
+.tox/
+*.egg-info/
+
+# Package development
+build/
+dist/
+*.whl
+
+# Documentation builds
+docs/_build/
+docs/build/
+
+# Backup files
+*.bak
+*.backup
+*_backup.*

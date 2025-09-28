@@ -20,6 +20,7 @@ seaborn>=0.11.0
 
 # Medical imaging file format support (for external dataset testing)
 nibabel>=3.2.0
+pydicom>=2.3.0
 
 # File handling and utilities
 tqdm>=4.64.0
