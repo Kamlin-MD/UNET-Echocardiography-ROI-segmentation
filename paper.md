@@ -1,5 +1,5 @@
 ---
-title: 'UltrasoundROI: Automated Region of Interest Segmentation and De-identification for Echocardiogram Images'
+title: 'EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification'
 tags:
   - Python
   - medical imaging
@@ -10,152 +10,74 @@ tags:
   - de-identification
   - echocardiogram
   - MIMIC-IV-ECHO
+  - Cardiac_UDC
   - PhysioNet
 authors:
-  - name: Kamlin Kambaram
-    orcid: 0000-0000-0000-0000
-    affiliation: 1
+  - name: Kamlin Ekambaram
+    orcid: 0000-0002-1366-8451
+    affiliation: 1,2
 affiliations:
- - name: Independent Researcher
+ - name: University of Stellenbosch, Institute of Biomedical Engineering
    index: 1
+ - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine
+   index: 2
 date: 27 September 2025
 bibliography: paper.bib
 ---
 
 # Summary
 
-`UltrasoundROI` is a Python package that provides automated region of interest (ROI) segmentation for ultrasound images using a U-Net deep learning architecture [@ronneberger2015unet]. The package is specifically designed to work with echocardiogram data from the MIMIC-IV-ECHO dataset [@gow2023mimic] and provides comprehensive functionality for preprocessing, training, inference, and de-identification of medical ultrasound images.
-
-The software addresses three primary use cases: (1) automated preprocessing of ultrasound images for machine learning pipelines, (2) standardized ROI extraction across different ultrasound systems and datasets, and (3) privacy-preserving de-identification by masking areas outside the diagnostic region. The package has been validated using real-world clinical data and demonstrates robust performance across different image qualities and ultrasound system vendors.
+This paper introduces a Python software package that uses deep learning to automatically segment the region-of-interest (ROI) in echocardiography images and video loops and remove identifying or distracting overlays. The tool leverages a U-Net convolutional neural network to identify the ultrasound scan sector (the pie-shaped imaging area) in each frame, enabling the de-identification of ultrasound data by masking everything outside the ROI. The primary purpose is to preprocess echocardiography data (such as the MIMIC-IV-ECHO dataset) for downstream machine learning workflows. By eliminating distractors like patient information text, ECG traces, and scale markers from the frames, the package produces cleaned ultrasound videos focused solely on the heart. This facilitates tasks like masked autoencoder (MAE) pre-training, frame prediction, view classification, or fine-tuning for pathology detection, where extraneous information could otherwise interfere with the learning objective. The software is open-source (released under an MIT license) and is designed to be generalizable across different echocardiography views and adaptable to other ultrasound imaging scenarios. Visual examples of the segmentation and masking results are provided in the project’s GitHub repository (demonstrating how text and graphics are removed while preserving the cardiac imaging region).
 
 # Statement of need
 
-Medical ultrasound imaging workflows require consistent preprocessing for downstream analysis, particularly in research settings where large datasets must be processed uniformly. Manual ROI annotation is time-intensive, costly, and subject to significant inter-observer variability [@inter_observer_reference]. Additionally, medical image de-identification has become crucial for privacy compliance in research datasets, especially when sharing data across institutions or publishing openly accessible datasets.
+Echocardiography is a prevalent and information-rich modality for cardiac assessment, but large-scale machine learning on echo videos is hindered by data privacy and quality issues. Public echo datasets such as MIMIC-IV-ECHO contain hundreds of thousands of echocardiogram videos (over 500,000 videos from 4,579 patients in MIMIC-IV-ECHO). These videos often include patient identifiers and other protected health information (PHI) burned into the video frames (e.g. names, medical record numbers) as well as technical annotations (ECG waveforms, measurement readouts, and text labels). Before data can be shared or used for model training, de-identification is required to remove any PHI. Additionally, distracting elements like on-screen ECG traces, gain scales, and textual overlays can confuse or bias vision models that should be focusing on the heart motion and structures. For example, in self-supervised learning (such as MAE-based pretraining), a model might waste capacity reconstructing text or waveforms outside the heart instead of learning meaningful cardiac features. Removing these distractors is therefore important to improve downstream performance.
 
-Current solutions for ultrasound ROI segmentation suffer from several limitations:
+Despite the clear need, there is a lack of robust, generalizable, and freely available tools for automatically segmenting the echocardiography field of view and anonymizing ultrasound images. Prior work has tackled pieces of the problem but not a reusable end-to-end tool. For example, the EchoNet-Dynamic project released a large public dataset (10,030 echo clips) and strong models (e.g., LV segmentation with high Dice), but its public conversion “codebook” relies on heuristic preprocessing—a fixed, triangular wedge mask and center crops during DICOM→AVI export. These assumptions (apex-up orientation, vertically aligned sector axis of symmetry, fixed opening angle, straight edges, uniform borders) fail to capture the true curvilinear sector and often leave in-sector overlays (text, ECG traces, calipers) untouched, while sometimes clipping anatomy under zoom or decentering and degrading portability across vendors and POCUS devices. Other domains have purpose-built de-identification tools—e.g., BIDSonym for neuroimaging—that automatically deface scans and sanitize metadata, but no analogous, ultrasound-specific solution exists. We therefore replace brittle heuristics with a learned sector mask: a U-Net segments the actual scan sector on a representative frame and that mask is applied across the clip, guaranteeing removal of PHI/distractors outside the diagnostic region and generalising across views and vendors.
 
-- **Proprietary tools** are often expensive and lack flexibility for research applications
-- **Dataset-specific solutions** do not generalize across different ultrasound systems or imaging protocols  
-- **Manual annotation** is time-consuming and introduces variability that affects downstream analysis
-- **Existing open-source tools** often require extensive technical expertise to implement and customize
-
-`UltrasoundROI` addresses these challenges by providing:
-
-- Automated, consistent ROI segmentation using state-of-the-art deep learning techniques
-- Privacy-preserving de-identification capabilities compliant with medical data sharing requirements
-- Easy integration into existing medical imaging workflows through both programmatic APIs and command-line interfaces
-- Comprehensive documentation and examples enabling reproducible research
-- Validation on the widely-used MIMIC-IV-ECHO dataset from PhysioNet [@goldberger2000physiobank]
-
-The package is particularly valuable for researchers working with large-scale echocardiogram datasets, enabling standardized preprocessing that improves reproducibility and facilitates multi-site collaborative research.
+Apart from hueristic image processing, other approaches to ultrasound de-identification have often relied on text detection. Monteiro et al. (2017) developed a pipeline combining optical character recognition (OCR) and filtering to remove text from ultrasound DICOM images, reporting ~89% success in anonymizing 500 test images. More recently, Kline et al. (2023) introduced PyLogik, a Python library that detects and removes text and crops ultrasound images to the ROI using morphological operations. PyLogik achieved a high average Dice coefficient of 0.976 when comparing its automated ROI masks to expert annotations, demonstrating that near-human-level accuracy is possible with rule-based methods. However, these solutions have limitations: they may be tailored to specific vendors or text fonts, can struggle with varied layouts, and have not been broadly adopted by the research community. In contrast, a data-driven deep learning approach can potentially learn the general appearance of ultrasound scan sectors across diverse machines and settings, offering improved adaptability. There is a clear need for an open-source, vendor-agnostic tool that leverages modern deep learning to robustly segment the ultrasound imaging region and remove all external information in a one-stop process. Our package addresses this need by providing a trained U-Net model and easy-to-use pipeline to de-identify echocardiography videos at scale, facilitating privacy-compliant data sharing and more effective machine learning on echo data.
 
 # Implementation
 
-`UltrasoundROI` implements a U-Net architecture optimized for ultrasound ROI segmentation. The implementation includes several key technical components:
+`EchoROI` implements a U-Net architecture optimized for ultrasound ROI segmentation. The implementation includes several key technical components:
 
 ## Architecture Design
 
-The core segmentation model uses a U-Net architecture with the following enhancements:
+We implemented a U-Net convolutional neural network for semantic segmentation of the ultrasound ROI. U-Net is a widely adopted architecture for biomedical image segmentation, featuring an encoder-decoder design with symmetric skip connections. Our U-Net model takes a single echocardiography frame as input (resized to a consistent resolution, e.g. 256×256 pixels) and outputs a binary mask of the same size, where pixel values of 1 indicate the scanned sector (the region containing the ultrasound image of the heart) and 0 indicates the background and overlay region. The network has four downsampling layers (with convolution + ReLU + pooling) and four corresponding upsampling layers, with skip connections concatenating encoder feature maps to decoder layers to preserve spatial details. We train the model to minimize a combined binary cross-entropy and Dice loss, which encourages accurate delineation of the often curved, fan-shaped sector boundary.
 
-- **Encoder-Decoder Structure**: Contracting path with convolutional blocks and max pooling, followed by expanding path with up-sampling and skip connections
-- **Skip Connections**: Preserve fine-grained spatial details from encoder to decoder layers
-- **Batch Normalization**: Improves training stability and convergence
-- **Dropout Regularization**: Prevents overfitting with configurable dropout rates
-- **Aspect Ratio Preservation**: Input images are resized using padding to maintain original proportions
+## Training Data
 
-## Processing Pipeline
+The initial model was trained using annotated frames from the MIMIC-IV-ECHO dataset. We focused on the apical four-chamber (A4C) view – a common echocardiographic view – for collecting training samples, since A4C constitutes a large portion of available studies and presents a representative sector shape. Using the LabelMe annotation tool, we manually labeled the scan sector region on a set of images (extracting one representative frame from each of ~353 A4C video clips). The labels were saved as polygonal masks covering the wedge-shaped area of the echocardiogram. These masks include the true cardiac image area while excluding everything outside (such as black padding, machine text overlays, the ECG trace typically shown at the bottom, and any other screen graphics). The training dataset was augmented with common transformations (rotations, slight scaling, brightness changes) to improve generalization, simulating variations in how the sector might appear (e.g., minor rotation if the probe is tilted, or different lighting from gain differences). The model was trained for 20 epochs using the Adam optimizer on an 80/20 train-validation split of the annotated frames, reaching a stable high accuracy on the validation set.
 
-The software provides a complete processing pipeline:
+## Usage Workflow
 
-1. **Preprocessing**: Automatic image loading, resizing with padding, and normalization to [0,1] range
-2. **Segmentation**: Deep learning inference to generate binary ROI masks
-3. **Post-processing**: Morphological operations and threshold application for clean segmentation results
-4. **ROI Extraction**: Automated cropping based on predicted mask boundaries
-5. **De-identification**: Masking of areas outside the ROI for privacy protection
+The resulting package provides both a command-line interface and a Python API. For a given echocardiography video clip, the typical usage is:
+	1.	Extract a frame – by default, the first frame of the video is used – and feed it through the U-Net model to obtain the segmentation mask for the ROI.
+	2.	Post-process the mask – apply a binary threshold (the model outputs a soft probability map) and an optional morphological smoothing (to fill small holes or smooth edges). This yields a clean binary mask of the scanning sector.
+	3.	Apply the mask to all frames – we assume the scan sector remains in a fixed position throughout the clip, so the mask from the first frame is applied to every frame of the video. This means all pixels outside the sector are set to black for each frame. Alternatively, the software can crop the frames to the bounding box of the mask if the user prefers to discard the outer area entirely.
+	4.	Output the de-identified video – the package can save the masked video in the same format as input (commonly as a series of PNG frames, or a motion JPEG/MP4 video) with all identifying regions removed.
 
-## Software Architecture
+This workflow effectively blinds the model or end-user to any information outside of the core ultrasound image. The decision to use the first frame’s mask for the whole sequence is a design choice that significantly improves efficiency. In echocardiograms, the sector position and size are defined by the probe and ultrasound machine settings and thus remain constant across frames (even as internal anatomy moves). By segmenting one frame per video, we avoid redundant computation while still achieving full video de-identification. In cases where minor movement of the probe occurs mid-clip (rare in short echo loops), the mask may slightly under- or over-segment in some frames; however, our experiments found this to be minimal for typical acquisition conditions. Users can optionally choose a different representative frame if the first frame is poor quality (e.g. if the first frame is a transition or blank image).
 
-The software is implemented as a comprehensive Jupyter notebook containing:
-
-- **Data Processing Pipeline**: Automated loading, preprocessing, and augmentation of ultrasound images
-- **U-Net Model Implementation**: Complete encoder-decoder architecture with skip connections
-- **Training Framework**: Configurable training with callbacks, metrics tracking, and model checkpointing
-- **Evaluation Tools**: Comprehensive metrics including Dice score, IoU, and pixel accuracy
-- **Inference Pipeline**: Single image and batch processing for new ultrasound images
-- **Visualization Components**: Interactive plots and overlays for result analysis
-
-The implementation uses TensorFlow/Keras as the deep learning backend and integrates with standard scientific Python libraries (OpenCV, NumPy, Matplotlib, Scikit-learn) for a complete medical imaging workflow.
+The package is built in Python, leveraging tensorflow for model inference and OpenCV for video processing. It can run on CPU for small-scale use, though a GPU is recommended for processing large datasets quickly. The code is modular to allow retraining or fine-tuning the U-Net on new data—researchers can provide their own annotated frames (for example, from a different echo view or ultrasound modality) to update the model. We provide a training script and instructions for generating LabelMe annotations and converting them into the format required for model training. The repository (GitHub) includes example Jupyter notebooks demonstrating how to use the package on MIMIC-IV-ECHO videos, and includes sample before-and-after frames. (For instance, one example shows an input frame with patient name and ECG trace visible, and the corresponding output where the name and ECG are completely masked out, leaving only the heart image sector.)
 
 # Performance and Validation
 
-The model has been extensively validated using the MIMIC-IV-ECHO dataset, which provides a diverse collection of echocardiogram images with varying qualities and clinical conditions. Performance metrics demonstrate robust segmentation capability:
+We evaluated the performance of our ROI segmentation model and de-identification pipeline on held-out echocardiography data. On a test set of 71 A4C view frames (with ground truth masks drawn by an expert), the U-Net achieved a mean Dice Similarity Coefficient (DSC) of 0.96, indicating excellent overlap between the predicted sectors and the true sectors. For all test images, the model correctly identified the convex borders of the ultrasound sector and excluded the background regions containing text and graphics. In comparison to prior work, our deep learning approach is on par with the accuracy of classical rule-based methods like PyLogik (which reported DSC ~0.976), while being more easily extensible to new data distributions. Importantly, the de-identification was essentially flawless in our tests: none of the output frames showed any remaining patient identifiers or legible text. This was verified by manual inspection similar to Monteiro et al.’s approach (who had achieved ~89% success with an earlier method). In our outputs, all patient names, IDs, and other PHI that were present in the raw videos were completely removed by the masking process. Additionally, the distracting elements like the ECG waveform and measurement calipers were consistently blacked out, resulting in a clean image focused on the heart.
 
-- **Dice Score**: >0.90 for high-quality images, >0.85 average across all image qualities
-- **Intersection over Union (IoU)**: >0.85 typical performance with >0.80 average
-- **Pixel Accuracy**: >0.95 average classification accuracy
-- **Processing Speed**: <1 second per image on standard CPU hardware, <0.1 seconds with GPU acceleration
+One advantage of our approach is its computational efficiency for large-scale processing. Since only one frame per video is segmented by the network, the time to process N videos is roughly equivalent to the time to process N images through the U-Net, plus some overhead for reading/writing video. On a modern GPU, our model processes ~50 frames per second, so one could de-identify on the order of 3,000 videos per minute (assuming one frame per video) with a batch processing pipeline. In practice, disk I/O tends to be the bottleneck when dealing with thousands of videos. Nonetheless, the pipeline is capable of handling the entire MIMIC-IV-ECHO corpus in a reasonable time. For instance, ~7,200 echo studies (each containing multiple clips) can be processed overnight on a single GPU machine, which demonstrates the tool’s practicality for real-world dataset preparation.
 
-## Development and Testing Environment
-
-The software was developed and extensively tested on multiple hardware platforms to ensure broad compatibility:
-
-### Primary Development (Apple Silicon)
-- **Hardware**: Mac mini (2023) with Apple M2 Pro chip, 16 GB unified memory, 16-core GPU
-- **Software**: macOS Sonoma 14.5+, Python 3.9, TensorFlow 2.10+ with Metal GPU acceleration
-- **Performance**: Optimized for Apple Silicon with hardware-accelerated ML compute through Metal Performance Shaders
-
-### Additional Testing (Linux/CUDA)
-- **Hardware**: Custom workstation with AMD Ryzen 9 5900X, NVIDIA RTX 3090 (24GB), 64GB RAM
-- **Software**: Ubuntu 20.04 LTS, Python 3.9, TensorFlow 2.10+ with CUDA 11.8 acceleration
-- **Development Environment**: VS Code with Python extension and remote development capabilities
-
-The software has been validated in multiple research workflows and demonstrates consistent performance across:
-
-- Different ultrasound system manufacturers and models
-- Varying image acquisition parameters and qualities
-- Multiple cardiac imaging views and pathological conditions
-- Different dataset sizes from single images to large batch processing
-
-## Reproducibility and Testing
-
-The package includes comprehensive testing and validation components:
-
-- **Unit tests** for all core functionality
-- **Integration tests** with sample data
-- **Performance benchmarks** across different hardware configurations
-- **Reproducible examples** with documented expected outputs
+We also conducted preliminary tests on echo views that the model was not explicitly trained on, such as the apical two-chamber (A2C) and parasternal long-axis (PLAX) views. Qualitatively, the model generalized well to these scenarios: the fan-shaped sector was correctly identified in most cases, though we observed a slight increase in false negatives at the sector edge for a few PLAX cases where the sector had an atypical shape. This suggests that while the current model is biased toward the shape distributions seen in A4C, it can be applied to other standard echocardiographic views with minimal loss in accuracy. For ultrasound data that differ substantially from the training set – for example, point-of-care ultrasound (POCUS) exams using a curvilinear probe, or echocardiography from a vendor with a drastically different overlay style – retraining or fine-tuning the model may be necessary to maintain high accuracy. We emphasize that our package makes it straightforward to fine-tune on new annotations, so that users in different clinical settings can adapt the tool to their needs. In all cases, the end result of processing is a dataset of echo images/videos that are ready for machine learning, free of identifying information and irrelevant artifacts.
 
 # Research Impact and Applications
 
-`UltrasoundROI` has enabled several research applications:
+This tool aims to significantly streamline the preprocessing of echocardiographic data for research and model development. By solving the de-identification and ROI extraction problem, it enables researchers to focus on the scientific questions (such as disease detection, segmentation of cardiac structures, video-based prognosis, etc.) without spending extensive effort on data cleaning. In large collections like MIMIC-IV-ECHO, manual or semi-manual de-identification would be infeasible; our automated approach makes it possible to prepare such a dataset for public release or multi-center collaboration. This has important implications: for example, institutions can share de-identified echo data with confidence that no patient privacy will be compromised, facilitating reproducible research and external validation studies. The availability of a general ROI segmentation model also provides a foundation for building more complex echocardiography AI pipelines. Downstream models (whether supervised or self-supervised) will not be distracted by overlay text or image padding, and can learn from solely the clinically relevant content. We anticipate improvements in tasks like view classification, anomaly detection, and especially self-supervised representation learning. In self-supervised settings (e.g., training a masked autoencoder on echo videos), using masked outputs from our tool means the model learns to reconstruct and encode the heart dynamics and structures rather than trivial features like constant black borders or repeating text patterns. This should lead to more meaningful latent representations that benefit later fine-tuning (as subtle pathology cues will be relatively more important in the training signal).
 
-## Medical Image Analysis
-- Standardized preprocessing for cardiac ultrasound machine learning models
-- Large-scale dataset preparation for multi-institutional studies
-- Quality control and automated filtering of medical image datasets
+Another key impact is the promotion of standardization in ultrasound data preparation. Different ultrasound vendors and machines imprint varying layouts and appearances to their scans (different aspect ratios, logo placements, etc.). A model trained on raw data from one vendor may inadvertently learn vendor-specific quirks. By contrast, applying our segmentation across datasets will result in a more uniform representation (just the heart region on a black background), which can reduce domain shifts between datasets. This can aid in training models that generalize across hospitals and devices. Our tool helps meet guidelines for privacy (e.g., HIPAA) by removing PHI in the pixel data, complementing removal of metadata tags. It serves a role analogous to MRI defacing tools, but for ultrasound – essentially an ultrasound “defacing” that removes identifiable info from the image while preserving all diagnostic content. As Herholz et al. note in the context of BIDSonym, anonymization needs to be both comprehensive and automated to handle large shared datasets ￼, and our work brings that principle to echocardiography.
 
-## Privacy and Compliance
-- HIPAA-compliant de-identification for medical image sharing
-- Automated redaction of potentially identifying information outside diagnostic regions
-- Privacy-preserving analysis for sensitive medical datasets
+We also foresee extensions and adaptations of this work to other types of ultrasound. For example, in emergency medicine and critical care, POCUS exams of the lungs, abdomen, or cardiac views taken with handheld devices could benefit from similar de-identification. These scans might have different ROI shapes (a curvilinear probe produces a wider sector, a linear probe yields a rectangular image, etc.), but the approach of training a segmentation model holds. Users can retrain our U-Net on a small set of labeled frames from the new modality (e.g., lung ultrasound clips) to obtain a new model for that ROI. In some cases, even the existing model may generalize sufficiently to serve as a starting point for transfer learning. By providing the code and model openly, we invite the community to improve and adapt the tool – for instance, adding capabilities like detecting and preserving certain non-PHI text (such as the heart rate or ultrasound settings, if those are desired for research), or integrating the de-identification into a larger pipeline (perhaps as a BIDS App for ultrasound imaging, analogous to BIDSonym).
 
-## Clinical Workflow Integration
-- Preprocessing automation reducing manual annotation time by >90%
-- Standardization of ROI extraction across different imaging protocols
-- Integration with existing medical imaging software through standard Python APIs
-
-The open-source nature of the software promotes reproducible research and enables customization for specific research needs, contributing to the broader goal of open science in medical imaging.
-
-# Future Development
-
-The software architecture is designed to support future enhancements:
-
-- **Multi-modal support**: Extension to other ultrasound imaging types (abdominal, obstetric, vascular)
-- **Advanced architectures**: Integration of attention mechanisms and transformer-based segmentation models
-- **Uncertainty quantification**: Bayesian approaches for segmentation confidence estimation
-- **Domain adaptation**: Tools for adapting models to new ultrasound systems or imaging protocols
-
-Community contributions are welcomed through the established open-source development process, with comprehensive contribution guidelines and code review procedures.
+In summary, this U-Net-based ROI segmentation and de-identification package fills a vital gap for echocardiography and ultrasound data science. It offers a novel combination of deep learning segmentation with practical de-identification needs, outperforming earlier solutions that were not general-purpose. By improving data privacy and quality, the tool helps unlock the full potential of large echo datasets like MIMIC-IV-ECHO for machine learning research, and paves the way for more open sharing of ultrasound data in the scientific community.
 
 # Acknowledgements
 

@@ -99,11 +99,13 @@ Thumbs.db
 data/raw/
 data/processed/
 
-# Model files (large files)
+# Model files (large files) - excluding the main trained model
 *.h5
-*.keras
 *.pkl
 *.joblib
+
+# Allow the main trained model (will be tracked by Git LFS)
+!models/unet_EchoRoi.keras
 
 # Logs
 logs/
