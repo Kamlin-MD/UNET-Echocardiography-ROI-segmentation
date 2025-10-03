@@ -96,6 +96,7 @@ Thumbs.db
 # Data files (adjust as needed)
 *.dcm
 *.DICOM
+data/
 data/raw/
 data/processed/
 
