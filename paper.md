@@ -79,6 +79,16 @@ We also foresee extensions and adaptations of this work to other types of ultras
 
 In summary, this U-Net-based ROI segmentation and de-identification package fills a vital gap for echocardiography and ultrasound data science. It offers a novel combination of deep learning segmentation with practical de-identification needs, outperforming earlier solutions that were not general-purpose. By improving data privacy and quality, the tool helps unlock the full potential of large echo datasets like MIMIC-IV-ECHO for machine learning research, and paves the way for more open sharing of ultrasound data in the scientific community.
 
+# Notes on Preprocessing and Generalization
+
+Our U-Net model was trained on curated, de-identified echocardiography frames where background overlays (ECG traces, machine UI, vendor text, borders) had been removed prior to segmentation. When applied directly to raw clinical AVI exports, the model may produce spurious activations in regions outside the ultrasound sector, particularly in areas with bright text or motion artifacts.
+
+We therefore recommend two strategies for researchers and practitioners who wish to adapt this workflow:
+	1.	Fine-tuning on in-domain data
+Retraining or fine-tuning on a representative dataset of raw exports from the target device (including typical overlays and artifacts) substantially improves robustness. A small fine-tuning set can be sufficient, especially when transfer learning is applied on top of our pretrained weights.
+	2.	On-device or preprocessing pipelines
+Alternatively, lightweight preprocessing (cropping to the ultrasound fan, masking UI areas, normalizing dynamic ranges) can be applied before inference. This preserves the model’s high accuracy while minimizing noise from non-relevant regions. These steps can be implemented directly in acquisition software, on-device firmware, or in a preprocessing notebook.
+
 # Acknowledgements
 
 This work utilizes the MIMIC-IV-ECHO dataset from PhysioNet [@gow2023mimic, @goldberger2000physiobank]. We acknowledge the efforts of the PhysioNet team and all contributors to the MIMIC-IV-ECHO dataset for making this research possible. This research was conducted in accordance with ethical guidelines for medical data use and with appropriate data access permissions through PhysioNet's established protocols.
