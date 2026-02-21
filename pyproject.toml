@@ -1,0 +1,109 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+# =============================================================================
+# Project metadata
+# =============================================================================
+[project]
+name = "echoroi"
+version = "0.1.0"
+description = "U-Net deep-learning tool for echocardiographic ROI segmentation and de-identification"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Kamlin Ekambaram", email = "kamlin.ekambaram@gmail.com"},
+]
+keywords = [
+    "deep-learning",
+    "medical-imaging",
+    "ultrasound",
+    "echocardiography",
+    "segmentation",
+    "u-net",
+    "de-identification",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+dependencies = [
+    "tensorflow>=2.12,<2.19",
+    "opencv-python>=4.6",
+    "numpy>=1.23,<2.0",
+    "scikit-learn>=1.2",
+    "scikit-image>=0.20",
+    "matplotlib>=3.6",
+    "tqdm>=4.64",
+    "pillow>=9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+    "pre-commit>=3.0",
+]
+notebooks = [
+    "jupyter>=1.0",
+    "ipywidgets>=8.0",
+    "seaborn>=0.12",
+]
+medical = [
+    "nibabel>=4.0",
+    "pydicom>=2.3",
+]
+export = [
+    "tf2onnx>=1.14",
+]
+
+[project.scripts]
+echoroi = "echoroi.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Kamlin-MD/echoroi"
+Repository = "https://github.com/Kamlin-MD/echoroi"
+Documentation = "https://github.com/Kamlin-MD/echoroi#readme"
+Issues = "https://github.com/Kamlin-MD/echoroi/issues"
+
+# =============================================================================
+# Tool configuration
+# =============================================================================
+[tool.setuptools.packages.find]
+include = ["echoroi*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["echoroi", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["echoroi"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

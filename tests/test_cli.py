@@ -1,15 +1,12 @@
-"""Test the CLI module."""
+"""Tests for the CLI module."""
 
 import unittest
 import os
-import sys
 import tempfile
 import shutil
 from unittest.mock import patch, MagicMock
 from io import StringIO
 
-# Add the package to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 class TestCLI(unittest.TestCase):
     """Test cases for CLI functionality."""
@@ -24,10 +21,10 @@ class TestCLI(unittest.TestCase):
     
     def test_main_no_args(self):
         """Test main function with no arguments."""
-        from unet_roi.cli import main
+        from echoroi.cli import main
         
         # Capture stdout
-        with patch('sys.argv', ['unet-roi']):
+        with patch('sys.argv', ['echoroi']):
             with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
                 main()
                 output = mock_stdout.getvalue()
@@ -35,7 +32,7 @@ class TestCLI(unittest.TestCase):
     
     def test_create_data_cli(self):
         """Test create-data CLI command."""
-        from unet_roi.cli import create_data_cli
+        from echoroi.cli import create_data_cli
         from types import SimpleNamespace
         
         # Create mock arguments
@@ -67,10 +64,10 @@ class TestCLI(unittest.TestCase):
     
     def test_train_cli_args_parsing(self):
         """Test training CLI argument parsing."""
-        from unet_roi.cli import main
+        from echoroi.cli import main
         
         test_args = [
-            'unet-roi', 'train',
+            'echoroi', 'train',
             '--image-dir', '/test/images',
             '--mask-dir', '/test/masks',
             '--epochs', '10',
@@ -79,7 +76,7 @@ class TestCLI(unittest.TestCase):
         
         # This should not raise an exception during argument parsing
         with patch('sys.argv', test_args):
-            with patch('unet_roi.cli.train_cli') as mock_train:
+            with patch('echoroi.cli.train_cli') as mock_train:
                 # Mock train_cli to avoid actual training
                 mock_train.return_value = None
                 try:
@@ -91,10 +88,10 @@ class TestCLI(unittest.TestCase):
     
     def test_predict_cli_args_parsing(self):
         """Test prediction CLI argument parsing."""
-        from unet_roi.cli import main
+        from echoroi.cli import main
         
         test_args = [
-            'unet-roi', 'predict',
+            'echoroi', 'predict',
             '--model-path', '/test/model.keras',
             '--input', '/test/input.png',
             '--output', '/test/output',
@@ -103,7 +100,7 @@ class TestCLI(unittest.TestCase):
         ]
         
         with patch('sys.argv', test_args):
-            with patch('unet_roi.cli.predict_cli') as mock_predict:
+            with patch('echoroi.cli.predict_cli') as mock_predict:
                 mock_predict.return_value = None
                 try:
                     main()
@@ -113,10 +110,10 @@ class TestCLI(unittest.TestCase):
     
     def test_evaluate_cli_args_parsing(self):
         """Test evaluation CLI argument parsing."""
-        from unet_roi.cli import main
+        from echoroi.cli import main
         
         test_args = [
-            'unet-roi', 'evaluate',
+            'echoroi', 'evaluate',
             '--model-path', '/test/model.keras',
             '--image-dir', '/test/images',
             '--mask-dir', '/test/masks',
@@ -124,7 +121,7 @@ class TestCLI(unittest.TestCase):
         ]
         
         with patch('sys.argv', test_args):
-            with patch('unet_roi.cli.evaluate_cli') as mock_evaluate:
+            with patch('echoroi.cli.evaluate_cli') as mock_evaluate:
                 mock_evaluate.return_value = None
                 try:
                     main()
@@ -134,17 +131,17 @@ class TestCLI(unittest.TestCase):
     
     def test_benchmark_cli_args_parsing(self):
         """Test benchmark CLI argument parsing."""
-        from unet_roi.cli import main
+        from echoroi.cli import main
         
         test_args = [
-            'unet-roi', 'benchmark',
+            'echoroi', 'benchmark',
             '--model-path', '/test/model.keras',
             '--image-path', '/test/image.png',
             '--num-runs', '5'
         ]
         
         with patch('sys.argv', test_args):
-            with patch('unet_roi.cli.benchmark_cli') as mock_benchmark:
+            with patch('echoroi.cli.benchmark_cli') as mock_benchmark:
                 mock_benchmark.return_value = None
                 try:
                     main()
@@ -158,18 +155,18 @@ class TestCLIEntryPoints(unittest.TestCase):
     
     def test_train_cli_entry(self):
         """Test training CLI entry point."""
-        from unet_roi.cli import train_cli_entry
+        from echoroi.cli import train_cli_entry
         
         test_args = ['--image-dir', '/test/images', '--mask-dir', '/test/masks']
         
-        with patch('sys.argv', ['unet-roi-train'] + test_args):
-            with patch('unet_roi.cli.main') as mock_main:
+        with patch('sys.argv', ['echoroi-train'] + test_args):
+            with patch('echoroi.cli.main') as mock_main:
                 train_cli_entry()
                 mock_main.assert_called_once()
     
     def test_predict_cli_entry(self):
         """Test prediction CLI entry point."""
-        from unet_roi.cli import predict_cli_entry
+        from echoroi.cli import predict_cli_entry
         
         test_args = [
             '--model-path', '/test/model.keras',
@@ -177,14 +174,14 @@ class TestCLIEntryPoints(unittest.TestCase):
             '--output', '/test/output'
         ]
         
-        with patch('sys.argv', ['unet-roi-predict'] + test_args):
-            with patch('unet_roi.cli.main') as mock_main:
+        with patch('sys.argv', ['echoroi-predict'] + test_args):
+            with patch('echoroi.cli.main') as mock_main:
                 predict_cli_entry()
                 mock_main.assert_called_once()
     
     def test_evaluate_cli_entry(self):
         """Test evaluation CLI entry point."""
-        from unet_roi.cli import evaluate_cli_entry
+        from echoroi.cli import evaluate_cli_entry
         
         test_args = [
             '--model-path', '/test/model.keras',
@@ -192,8 +189,8 @@ class TestCLIEntryPoints(unittest.TestCase):
             '--mask-dir', '/test/masks'
         ]
         
-        with patch('sys.argv', ['unet-roi-evaluate'] + test_args):
-            with patch('unet_roi.cli.main') as mock_main:
+        with patch('sys.argv', ['echoroi-evaluate'] + test_args):
+            with patch('echoroi.cli.main') as mock_main:
                 evaluate_cli_entry()
                 mock_main.assert_called_once()
 

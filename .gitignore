@@ -1,160 +1,108 @@
-# Byte-compiled / optimized / DLL files
+# =============================================================================
+# EchoROI – .gitignore
+# =============================================================================
+
+# ---------- Python ----------
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-
-# PyInstaller
+dist/
+build/
+*.whl
+.eggs/
 *.manifest
 *.spec
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
+# ---------- Virtual environments ----------
+.venv/
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# IDE
+# ---------- IDE / OS ----------
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
 
-# Data files (adjust as needed)
-*.dcm
-*.DICOM
-data/
-data/raw/
-data/processed/
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
 
-# Model files (large files) - excluding the main trained model
-*.h5
-*.pkl
-*.joblib
+# ---------- Data & models (NEVER commit patient data or large weights) ----------
+# Raw / processed datasets
+data/images/
+data/masks/
+UNET_training_dataset/
+preprocessed_data/
+test_data/
+epoch_overlays/
 
-# Allow the main trained model (will be tracked by Git LFS)
-!models/unet_EchoRoi.keras
+# Model weights – large intermediate checkpoints stay ignored
+models/*.h5
+models/*.pb
+models/*.csv
+models/*SavedModel/
+models/tflite/
+# The final trained .keras and .onnx weights ARE committed
+# models/*.keras  ← NOT ignored
+# models/*.onnx   ← NOT ignored
 
-# Logs
-logs/
-*.log
-tensorboard_logs/
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Training outputs
-training_history.png
-prediction_comparison.png
-overlay_visualization.png
-unet_architecture.png
-
-# DICOM processing outputs
+# ---------- Outputs ----------
+results/
+outputs/
+predictions/
+*_output/
+# Note: training_results/ is NOT ignored – it is committed for the paper
+!training_results/
 processed_frames/
-videos/
 *.avi
 *.mp4
 *.mov
 
-# Test outputs and temporary results
-test_results/
-output/
-results/
-predictions/
-*_output/
-*_results/
+# ---------- Logs ----------
+logs/
+*.log
+tensorboard_logs/
 
-# Development artifacts
+# ---------- Testing / QA ----------
 .coverage
-.pytest_cache/
+.coverage.*
+htmlcov/
 .tox/
-*.egg-info/
+.cache
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+coverage.xml
 
-# Package development
-build/
-dist/
-*.whl
+# ---------- Type checking / linting ----------
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
 
-# Documentation builds
+# ---------- Docs ----------
 docs/_build/
 docs/build/
+/site
 
-# Backup files
+# ---------- Misc ----------
+*.tmp
 *.bak
 *.backup
-*_backup.*
+*.pkl
+*.joblib
+*.dcm
+*.DICOM
+tmp/
+temp/
