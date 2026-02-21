@@ -7,11 +7,11 @@
     256
   ],
   "epochs_configured": 50,
-  "epochs_completed": 29,
-  "batch_size": 8,
+  "epochs_completed": 50,
+  "batch_size": 16,
   "learning_rate": 0.0001,
   "validation_split": 0.2,
-  "best_val_loss": 0.026571569964289665,
-  "best_val_dice": 0.9855303764343262,
-  "best_val_iou": 0.9715031981468201
+  "best_val_loss": 0.029602259397506714,
+  "best_val_dice": 0.9853867888450623,
+  "best_val_iou": 0.9712119102478027
 }

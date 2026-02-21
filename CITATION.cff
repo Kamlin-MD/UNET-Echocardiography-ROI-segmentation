@@ -8,8 +8,8 @@ authors:
 title: "EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification"
 version: 0.1.0
 date-released: 2026-02-21
-url: "https://github.com/Kamlin-MD/echoroi"
-repository-code: "https://github.com/Kamlin-MD/echoroi"
+url: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
+repository-code: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
 abstract: "A Python package for automated region of interest (ROI) segmentation in echocardiogram images using a U-Net deep-learning model, with applications in medical data de-identification."
 keywords:
   - "medical imaging"

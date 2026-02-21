@@ -47,6 +47,13 @@ preprocessed_data/
 test_data/
 epoch_overlays/
 
+# Inference / evaluation outputs (user-generated, not committed)
+results/
+evaluation_results/
+
+# Empty placeholder dirs
+docs/
+
 # Model weights – large intermediate checkpoints stay ignored
 models/*.h5
 models/*.pb

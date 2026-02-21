@@ -78,16 +78,17 @@ class UNetTrainer:
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=model_save_path,
-                monitor='val_loss',
+                monitor='val_dice_coefficient',
                 save_best_only=True,
                 save_weights_only=False,
-                mode='min',
+                mode='max',
                 verbose=1
             ),
             tf.keras.callbacks.EarlyStopping(
-                monitor='val_loss',
-                patience=10,
+                monitor='val_dice_coefficient',
+                patience=50,
                 verbose=1,
+                mode='max',
                 restore_best_weights=True
             ),
             tf.keras.callbacks.ReduceLROnPlateau(

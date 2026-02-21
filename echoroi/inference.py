@@ -103,13 +103,16 @@ class UNetPredictor:
                    padding: int = 10) -> np.ndarray:
         """Extract ROI from image using predicted mask.
         
+        Applies the mask to zero-out non-ROI pixels, then crops to the
+        bounding box of the mask contour.
+        
         Args:
-            image: Original image
-            mask: Binary mask
+            image: Original image (grayscale or RGB)
+            mask: Binary mask (0/255)
             padding: Padding around the ROI bounding box
             
         Returns:
-            Cropped ROI image
+            Cropped ROI image with non-ROI pixels blacked out
         """
         # Find contours in the mask
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -118,6 +121,13 @@ class UNetPredictor:
             print("Warning: No contours found in mask")
             return image
             
+        # Apply mask — black out everything outside the ROI
+        binary = (mask > 127).astype(np.uint8)
+        if image.ndim == 3:
+            masked = image * binary[:, :, np.newaxis]
+        else:
+            masked = image * binary
+            
         # Get bounding box of the largest contour
         largest_contour = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour)
@@ -125,11 +135,11 @@ class UNetPredictor:
         # Add padding
         x_start = max(0, x - padding)
         y_start = max(0, y - padding)
-        x_end = min(image.shape[1], x + w + padding)
-        y_end = min(image.shape[0], y + h + padding)
+        x_end = min(masked.shape[1], x + w + padding)
+        y_end = min(masked.shape[0], y + h + padding)
         
-        # Extract ROI
-        roi = image[y_start:y_end, x_start:x_end]
+        # Crop to bounding box
+        roi = masked[y_start:y_end, x_start:x_end]
         
         return roi
     

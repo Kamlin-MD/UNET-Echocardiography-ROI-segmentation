@@ -1,0 +1,26 @@
+Retrain model (50 epochs, Dice 0.988), fix notebooks, add paper figures
+
+Training & Model
+- Retrain U-Net for 50 epochs: Dice 0.9880, IoU 0.9763, Accuracy 0.9906
+- Monitor val_dice_coefficient for checkpointing and early stopping
+- Re-export ONNX model from updated weights
+- Fix extract_roi() to apply binary mask before cropping
+
+Paper (JOSS)
+- Rewrite paper.md with correct citations, updated metrics, JOSS style
+- Rewrite paper.bib: fix formatting, expand author lists, add DOIs
+- Generate pipeline_overview.png and prediction_samples.png figures
+
+Notebooks
+- 01_training: updated with new training results
+- 02_onnx_conversion: add Keras-vs-ONNX visual comparison (Sec 8)
+- 03_inference_demo: fix all broken API calls, add paper figure cells
+- 04_dataset_preprocessing: clean up DICOM pipeline notebook
+
+Repository Quality
+- Fix GitHub URLs in pyproject.toml, CITATION.cff, README.md
+- Implement create_sample_data() in preprocessing.py (was missing)
+- Write CONTRIBUTING.md (was empty)
+- Add results/, evaluation_results/ to .gitignore
+- Un-skip test_create_sample_data; all 23 tests pass
+- Update README.md with retrained model metrics

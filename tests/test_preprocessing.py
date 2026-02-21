@@ -88,7 +88,6 @@ class TestSampleDataCreation(unittest.TestCase):
         """Clean up test fixtures."""
         shutil.rmtree(self.temp_dir)
 
-    @unittest.skip("create_sample_data not yet implemented in echoroi.preprocessing")
     def test_create_sample_data(self):
         """Test creating sample synthetic data."""
         from echoroi.preprocessing import create_sample_data
