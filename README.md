@@ -1,249 +1,319 @@
-# U-Net Ultrasound ROI Segmentation
+# EchoROI
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.8%2B-orange.svg)](https://tensorflow.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Paper](https://img.shields.io/badge/paper-arXiv-red.svg)](https://arxiv.org/abs/XXXX.XXXX)
+[![CI](https://github.com/Kamlin-MD/echoroi/actions/workflows/ci.yml/badge.svg)](https://github.com/Kamlin-MD/echoroi/actions)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![JOSS](https://img.shields.io/badge/JOSS-submitted-green.svg)](paper/paper.md)
 
-**Automated ultrasound ROI segmentation using U-Net deep learning for medical image analysis and privacy-preserving deidentification.**
+**U-Net deep-learning tool for echocardiographic ROI segmentation and de-identification.**
 
-## 🎯 Overview
+EchoROI provides a pretrained U-Net model that segments the ultrasound
+scan sector (region of interest) in echocardiogram frames and masks out
+everything else — patient identifiers, ECG traces, vendor overlays, and
+other non-diagnostic content. Users can apply the pretrained model
+directly or fine-tune on their own annotated data.
 
-This package provides a complete solution for automated region of interest (ROI) segmentation in ultrasound images using deep learning. Key features include:
+---
 
-- 🔬 **State-of-the-art U-Net architecture** for medical image segmentation
-- 🛡️ **Privacy-preserving deidentification** by masking non-diagnostic areas  
-- 🚀 **Complete pipeline** from training to inference with CLI interface
-- 📊 **Comprehensive evaluation** with metrics and benchmarking
-- 🎓 **Research-ready** with published methods and reproducible results
+## Features
 
-## 🚀 Quick Start
+- **Pretrained model** — ready-to-use weights trained on 1,355 annotated frames
+- **CLI and Python API** — single-image or batch prediction, de-identification, ROI extraction
+- **Fine-tuning** — retrain on custom datasets with a single command
+- **ONNX export** — convert to ONNX for framework-agnostic deployment
+- **Evaluation suite** — Dice, IoU, accuracy, sensitivity, specificity metrics
 
-### Installation
+---
+
+## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/kamlinekambaram/UNET-Ultrasound-ROI-Segmentation.git
-cd UNET-Ultrasound-ROI-Segmentation
-
-# Install the package
+git clone https://github.com/Kamlin-MD/echoroi.git
+cd echoroi
 pip install -e .
-
-# Or install from PyPI (when published)
-pip install unet-ultrasound-roi
 ```
 
-### Basic Usage
+For development (linting, tests):
 
 ```bash
-# Create sample data for testing
-unet-roi create-data --output-dir sample_data --num-samples 10
+pip install -e ".[dev]"
+```
 
-# Train a new model
-unet-roi train --image-dir data/images --mask-dir data/masks --epochs 50
+Optional extras:
 
-# Make predictions
-unet-roi predict --model-path models/unet_EchoRoi.keras --input test_image.png --output results/
+```bash
+pip install -e ".[notebooks]"   # Jupyter support
+pip install -e ".[medical]"     # NIfTI / DICOM loaders
+pip install -e ".[export]"      # ONNX conversion (tf2onnx)
+```
 
-# Evaluate model performance  
-unet-roi evaluate --model-path models/unet_EchoRoi.keras --image-dir data/val_images --mask-dir data/val_masks
+---
+
+## Quick start
+
+### Command-line interface
+
+```bash
+# Predict a mask for a single image
+echoroi predict \
+    --model-path models/echoroi_unified.keras \
+    --input frame.png \
+    --output results/
+
+# Predict on a directory of images
+echoroi predict \
+    --model-path models/echoroi_unified.keras \
+    --input video_frames/ \
+    --output results/ \
+    --visualize
+
+# De-identify: black out everything outside the scan sector
+echoroi predict \
+    --model-path models/echoroi_unified.keras \
+    --input video_frames/ \
+    --output clean/ \
+    --deidentify
+
+# Extract cropped ROI regions
+echoroi predict \
+    --model-path models/echoroi_unified.keras \
+    --input frame.png \
+    --output results/ \
+    --extract-roi
+
+# Train a new model from scratch
+echoroi train \
+    --image-dir data/images \
+    --mask-dir data/masks \
+    --model-path models/echoroi_unified.keras \
+    --epochs 50 \
+    --batch-size 8 \
+    --learning-rate 1e-4 \
+    --results-dir training_results
+
+# Evaluate model on a test set
+echoroi evaluate \
+    --model-path models/echoroi_unified.keras \
+    --image-dir data/images \
+    --mask-dir data/masks \
+    --output evaluation_results
+
+# Benchmark inference speed
+echoroi benchmark \
+    --model-path models/echoroi_unified.keras \
+    --image-path data/images/sample_000.png \
+    --num-runs 20
 ```
 
 ### Python API
 
 ```python
-from unet_roi import UNetModel, UltrasoundPreprocessor, UNetPredictor
+from echoroi import UNetPredictor
 
-# Load and preprocess data
-preprocessor = UltrasoundPreprocessor(img_size=(256, 256))
-X, Y = preprocessor.load_dataset('data/images', 'data/masks')
+# Load pretrained model
+predictor = UNetPredictor("models/echoroi_unified.keras")
 
-# Build and train model
-model = UNetModel(input_shape=(256, 256, 1))
-trained_model = model.compile_model()
+# Predict a binary mask
+mask = predictor.predict_single_image("frame.png")
 
-# Make predictions
-predictor = UNetPredictor('models/unet_model.keras')
-mask = predictor.predict_single_image('test_image.png')
+# Full pipeline: visualisation + de-identification + ROI extraction
+result = predictor.process_image_with_visualization(
+    "frame.png", save_path="output.png"
+)
+
+# Batch prediction
+masks = predictor.predict_batch(["frame1.png", "frame2.png", "frame3.png"])
+
+# Benchmark
+stats = predictor.benchmark_inference_speed("frame.png", num_runs=20)
 ```
 
-## 📖 Dataset Requirements
+#### Fine-tuning from Python
 
-This package supports multiple ultrasound datasets:
+```python
+from echoroi import UNetTrainer
 
-### Recommended Datasets
-- **MIMIC-IV-ECHO** (PhysioNet) - Requires credentialed access
-- **Cardiac Ultrasound Dataset** (Kaggle) - Public access
-- **Custom datasets** - See data format requirements below
+trainer = UNetTrainer(
+    img_size=(256, 256),
+    learning_rate=1e-4,
+    batch_size=8,
+    epochs=20,
+    validation_split=0.2,
+)
 
-### Data Format
+history = trainer.train(
+    image_dir="my_data/images",
+    mask_dir="my_data/masks",
+    model_save_path="models/echoroi_finetuned.keras",
+    results_dir="my_results",
+)
+
+# Save training plots and metrics
+trainer.save_results("my_results")
 ```
-data/
-├── images/          # Input ultrasound images (.png, .jpg)
-│   ├── image_001.png
-│   ├── image_002.png
-│   └── ...
-└── masks/           # Binary ROI masks (.png)
-    ├── image_001.png  # Corresponding mask
-    ├── image_002.png
-    └── ...
-```
-
-### Sample Data
-Generate synthetic test data:
-```bash
-unet-roi create-data --output-dir sample_data --num-samples 50
-```
-
-## Hardware Tested
-
-## 🏗️ Technical Architecture
-
-### Model Design
-- **Architecture**: U-Net with encoder-decoder structure and skip connections
-- **Input**: 256×256 grayscale ultrasound images  
-- **Output**: Binary segmentation masks (ROI vs background)
-- **Parameters**: ~31M trainable parameters
-- **Framework**: TensorFlow/Keras with GPU optimization
-
-### Key Features
-- **Preprocessing**: Automatic resizing with aspect ratio preservation
-- **Augmentation**: Built-in data augmentation pipeline
-- **Metrics**: Dice coefficient, IoU score, accuracy
-- **Inference**: Real-time prediction (~15ms per image)
-- **Export**: Multiple output formats (masks, ROI crops, overlay visualizations)
-
-## 📊 Performance Benchmarks
-
-### Model Performance
-| Metric | Score | Description |
-|--------|-------|-------------|
-| **Dice Coefficient** | 0.891 | Overlap between prediction and ground truth |
-| **IoU Score** | 0.803 | Intersection over Union |
-| **Accuracy** | 94.2% | Pixel-wise classification accuracy |
-| **Inference Speed** | 15ms | Average time per 256×256 image |
-
-### Computational Requirements
-- **Training**: 4-8GB GPU memory, 2-4 hours on RTX 3080
-- **Inference**: CPU sufficient, GPU recommended for batch processing
-- **Memory**: 2GB RAM minimum, 8GB recommended
-
-## 🔧 CLI Reference
-
-### Training
-```bash
-unet-roi train \
-    --image-dir data/images \
-    --mask-dir data/masks \
-    --model-path models/my_model.keras \
-    --epochs 50 \
-    --batch-size 8 \
-    --learning-rate 1e-4 \
-    --validation-split 0.2
-```
-
-### Prediction
-```bash
-unet-roi predict \
-    --model-path models/unet_EchoRoi.keras \
-    --input data/test_images/ \
-    --output results/ \
-    --threshold 0.5 \
-    --visualize \
-    --extract-roi \
-    --deidentify
-```
-
-### Evaluation
-```bash
-unet-roi evaluate \
-    --model-path models/unet_EchoRoi.keras \
-    --image-dir data/test_images \
-    --mask-dir data/test_masks \
-    --output evaluation_results/
-```
-
-### Benchmarking
-```bash
-unet-roi benchmark \
-    --model-path models/unet_EchoRoi.keras \
-    --image-path sample_image.png \
-    --num-runs 100
-```
-
-## 🧪 Testing
-
-Run the comprehensive test suite:
-
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Run specific test modules
-python -m pytest tests/test_model.py -v
-python -m pytest tests/test_preprocessing.py -v
-python -m pytest tests/test_cli.py -v
-
-# Generate coverage report
-python -m pytest tests/ --cov=unet_roi --cov-report=html
-```
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Setup
-```bash
-git clone https://github.com/kamlinekambaram/UNET-Ultrasound-ROI-Segmentation.git
-cd UNET-Ultrasound-ROI-Segmentation
-pip install -e ".[dev]"
-pre-commit install  # Install git hooks
-```
-
-### Issues and Support
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/kamlinekambaram/UNET-Ultrasound-ROI-Segmentation/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/kamlinekambaram/UNET-Ultrasound-ROI-Segmentation/discussions)
-- 📧 **Contact**: kamlinekambaram@gmail.com
-
-## 📚 Research & Citation
-
-### Applications
-- **Medical Image Deidentification**: Remove patient information while preserving diagnostic content
-- **Automated ROI Extraction**: Streamline clinical workflows with automatic region detection  
-- **Quality Assurance**: Standardize ultrasound image processing pipelines
-- **Research Datasets**: Enable privacy-compliant sharing of medical imaging data
-
-### Academic Usage
-
-If you use this software in your research, please cite:
-
-```bibtex
-@software{ekambaram2024unet,
-  title={U-Net Ultrasound ROI Segmentation: Deep Learning for Medical Image Analysis},
-  author={Ekambaram, Kamlin},
-  year={2024},
-  url={https://github.com/kamlinekambaram/UNET-Ultrasound-ROI-Segmentation},
-  doi={10.5281/zenodo.XXXXX}
-}
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **MIMIC-IV-ECHO Dataset**: PhysioNet collaborative research community
-- **U-Net Architecture**: Ronneberger et al. (2015) seminal work
-- **TensorFlow/Keras**: Google's machine learning framework
-- **Open Source Community**: Contributors and maintainers
 
 ---
 
-<div align="center">
+## Model architecture
 
-**⭐ Star this repository if it helps your research!**
+| Property | Value |
+|---|---|
+| Architecture | U-Net (4 encoder + 4 decoder blocks) |
+| Parameters | 31,031,745 |
+| Input | 256 x 256 x 1 (grayscale) |
+| Output | 256 x 256 x 1 (binary mask) |
+| Loss | Binary cross-entropy |
+| Metrics | Dice coefficient, IoU, accuracy |
+| Optimizer | Adam (lr = 1e-4) |
 
-[Documentation](docs/) • [Examples](examples/) • [Paper](https://arxiv.org/abs/XXXX.XXXX) • [Cite](#research--citation)
+The encoder uses 3x3 convolutions with ReLU activation, He-normal
+initialisation, spatial dropout (0.1–0.3), and 2x2 max-pooling. The
+decoder mirrors this with transposed convolutions and skip connections.
 
-</div>
+---
+
+## Training datasets
+
+The model was trained on 1,355 manually annotated echocardiogram frames
+spanning three public/institutional datasets. Annotations were created
+with [LabelMe](https://github.com/wkentaro/labelme).
+
+| Dataset | Samples | Source | Access |
+|---|---|---|---|
+| MIMIC-IV-ECHO | 947 | PhysioNet | [Credentialed](https://physionet.org/content/mimic-iv-echo/) |
+| EchoNet-Dynamic | 145 | Stanford | [Public](https://echonet.github.io/dynamic/) |
+| EchoNet-Paediatric | 263 | Institutional | By request |
+| **Total** | **1,355** | | |
+
+> **Note:** Training data is **not** included in this repository. The
+> pretrained model weights are provided in `models/`. To retrain, obtain
+> the original datasets and place matched image/mask pairs in `data/`.
+
+### Dataset limitations
+
+- Training covers common clinical echo machines (GE, Philips, Siemens).
+  Handheld / point-of-care (POCUS) devices with very different screen
+  layouts may produce lower-quality masks.
+- Fine-tuning on 50–100 annotated frames from the target device is
+  usually sufficient to adapt the model.
+
+---
+
+## Training results
+
+Pre-computed metrics and visualisations are stored in `training_results/`:
+
+| Metric | Value |
+|---|---|
+| **Dice coefficient** | 0.9872 |
+| **IoU (Jaccard)** | 0.9747 |
+| **Accuracy** | 0.9900 |
+| **Sensitivity** | 0.9857 |
+| **Specificity** | 0.9928 |
+
+Training was early-stopped at epoch 29/50 (patience = 10, monitoring
+`val_loss`). Learning rate was reduced on plateau (factor 0.5,
+patience 5).
+
+```
+training_results/
+  training_history.png       Training / validation loss & metric curves
+  prediction_samples.png     Sample predictions on held-out validation data
+  metrics.json               Final Dice, IoU, accuracy, sensitivity, specificity
+  dataset_summary.json       Dataset size, hyperparameters, best metrics
+  training_log.csv           Per-epoch metrics
+```
+
+---
+
+## Project layout
+
+```
+echoroi/                  Installable Python package
+  __init__.py               Package entry point and public API
+  model.py                  U-Net architecture, registered Dice & IoU metrics
+  preprocessing.py          Image/mask loading, resizing, normalisation
+  training.py               Training loop, callbacks, result saving
+  inference.py              Prediction, ROI extraction, de-identification
+  cli.py                    Command-line interface (train, predict, evaluate, benchmark)
+models/                   Pretrained model weights
+  echoroi_unified.keras     Keras model (355 MB)
+  echoroi_unified.onnx      ONNX model (118 MB)
+training_results/         Metrics, plots, and training artefacts
+notebooks/                Jupyter notebooks for exploration & reproducibility
+  01_training_and_evaluation.ipynb
+  02_onnx_conversion.ipynb
+  03_inference_demo.ipynb
+  04_dataset_preprocessing.ipynb
+paper/                    JOSS manuscript (paper.md, paper.bib, figures/)
+scripts/                  Utility scripts (not part of the package)
+  convert_labelme_to_masks.py   One-time: LabelMe JSON to PNG mask conversion
+  convert_to_onnx.py            Convert .keras to .onnx with validation
+tests/                    pytest suite
+```
+
+---
+
+## ONNX export
+
+Convert the Keras model to ONNX for deployment outside TensorFlow:
+
+```bash
+pip install -e ".[export]"
+python scripts/convert_to_onnx.py
+```
+
+Use the ONNX model for inference with ONNX Runtime:
+
+```python
+import onnxruntime as ort
+import numpy as np
+
+sess = ort.InferenceSession("models/echoroi_unified.onnx")
+# input: float32 [1, 256, 256, 1], output: float32 [1, 256, 256, 1]
+pred = sess.run(None, {"input": image_batch})[0]
+```
+
+---
+
+## Development
+
+```bash
+make dev          # install with dev + notebook extras
+make test         # run pytest
+make lint         # run ruff linter
+make test-cov     # pytest with coverage report
+make train        # retrain model on data/
+make evaluate     # evaluate model on data/
+make onnx         # convert model to ONNX
+make clean        # remove build artefacts
+```
+
+---
+
+## Citation
+
+If you use EchoROI in your research, please cite:
+
+```bibtex
+@article{echoroi2026,
+  title   = {EchoROI: A U-Net-based Python Tool for Echocardiographic ROI
+             Segmentation and De-identification},
+  author  = {Ekambaram, Kamlin},
+  journal = {Journal of Open Source Software},
+  year    = {2026}
+}
+```
+
+See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md)
+for guidelines.
+
+## License
+
+[MIT](LICENSE)

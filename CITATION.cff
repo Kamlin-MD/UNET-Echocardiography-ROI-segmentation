@@ -5,22 +5,20 @@ authors:
   given-names: "Kamlin"
   orcid: "https://orcid.org/0000-0002-1366-8451"
   email: "kamlin.ekambaram@gmail.com"
-title: "UltrasoundROI: Automated Region of Interest Segmentation and De-identification for Echocardiogram Images"
-version: 1.0.0
-doi: 10.21105/joss.[will-be-assigned-by-joss]
-date-released: 2025-09-27
-url: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
-repository-code: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
-abstract: "A comprehensive Python package for automated region of interest (ROI) segmentation in ultrasound images using deep learning, with specific optimization for echocardiogram analysis and medical data de-identification."
+title: "EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification"
+version: 0.1.0
+date-released: 2026-02-21
+url: "https://github.com/Kamlin-MD/echoroi"
+repository-code: "https://github.com/Kamlin-MD/echoroi"
+abstract: "A Python package for automated region of interest (ROI) segmentation in echocardiogram images using a U-Net deep-learning model, with applications in medical data de-identification."
 keywords:
   - "medical imaging"
   - "ultrasound"
   - "deep learning"
   - "segmentation"
-  - "UNET"
+  - "U-Net"
   - "de-identification"
   - "echocardiogram"
-  - "MIMIC-IV-ECHO"
-  - "PhysioNet"
+  - "EchoNet-Dynamic"
+  - "EchoNet-Paeds"
 license: MIT
-repository-artifact: "https://pypi.org/project/ultrasound-roi/"
