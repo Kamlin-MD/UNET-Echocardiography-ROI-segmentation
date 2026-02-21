@@ -1,6 +1,6 @@
 # EchoROI
 
-[![CI](https://github.com/Kamlin-MD/echoroi/actions/workflows/ci.yml/badge.svg)](https://github.com/Kamlin-MD/echoroi/actions)
+[![CI](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![JOSS](https://img.shields.io/badge/JOSS-submitted-green.svg)](paper/paper.md)
@@ -28,8 +28,8 @@ directly or fine-tune on their own annotated data.
 ## Installation
 
 ```bash
-git clone https://github.com/Kamlin-MD/echoroi.git
-cd echoroi
+git clone https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation.git
+cd UNET-Echocardiography-ROI-segmentation
 pip install -e .
 ```
 
@@ -205,15 +205,14 @@ Pre-computed metrics and visualisations are stored in `training_results/`:
 
 | Metric | Value |
 |---|---|
-| **Dice coefficient** | 0.9872 |
-| **IoU (Jaccard)** | 0.9747 |
-| **Accuracy** | 0.9900 |
-| **Sensitivity** | 0.9857 |
-| **Specificity** | 0.9928 |
+| **Dice coefficient** | 0.9880 |
+| **IoU (Jaccard)** | 0.9763 |
+| **Accuracy** | 0.9906 |
+| **Sensitivity** | 0.9894 |
+| **Specificity** | 0.9914 |
 
-Training was early-stopped at epoch 29/50 (patience = 10, monitoring
-`val_loss`). Learning rate was reduced on plateau (factor 0.5,
-patience 5).
+Training ran for 50 epochs (best checkpoint saved by `val_dice_coefficient`).
+Learning rate was reduced on plateau (factor 0.5, patience 5).
 
 ```
 training_results/

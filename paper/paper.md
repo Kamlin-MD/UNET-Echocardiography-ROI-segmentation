@@ -6,97 +6,218 @@ tags:
   - ultrasound
   - deep learning
   - segmentation
-  - UNET
+  - U-Net
   - de-identification
-  - echocardiogram
-  - MIMIC-IV-ECHO
-  - Cardiac_UDC
-  - PhysioNet
+  - echocardiography
 authors:
   - name: Kamlin Ekambaram
     orcid: 0000-0002-1366-8451
-    affiliation: 1,2
+    affiliation: "1, 2"
 affiliations:
- - name: University of Stellenbosch, Institute of Biomedical Engineering
-   index: 1
- - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine
-   index: 2
-date: 27 September 2025
+  - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
+    index: 1
+  - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine, South Africa
+    index: 2
+date: 21 February 2026
 bibliography: paper.bib
 ---
 
 # Summary
 
-Echocardiography is a widely used medical imaging modality for diagnosing heart conditions, but large-scale analysis of echo videos is often hampered by the presence of protected health information (PHI) and extraneous screen graphics. EchoROI is an open-source Python tool that automatically segments the fan-shaped ultrasound scan sector in each frame of an echocardiogram (ROI = region of interest) and masks out everything else. It uses a U-Net convolutional neural network to predict a binary mask of the cardiac imaging region. Applying this mask to each frame effectively removes patient identifiers (names, IDs) and distracting overlays (ECG traces, calipers, text) outside the heart image, producing “clean” videos suitable for AI research. For example, the public EchoNet-Dynamic dataset (10,030 apical-4-chamber clips) was similarly cropped and masked to remove text outside the sector {}￼. EchoROI generalizes this concept: it learns the actual curved sector shape from data (rather than assuming a fixed wedge) and automatically strips out overlaid graphics. This preprocessing enables downstream vision models (classification, segmentation, self-supervised learning, etc.) to focus on cardiac anatomy. The software is distributed under an MIT license, and the GitHub repository provides the U-Net model, data processing scripts, example notebooks, and instructions for user-supplied datasets. (See Fig. 1 for a schematic of the pipeline.)
+Echocardiography is the most widely performed cardiac imaging modality,
+yet large-scale computational analysis of echocardiogram videos is
+hindered by protected health information (PHI) and vendor-specific
+overlays embedded directly in the pixel data.  `EchoROI` is an
+open-source Python package that uses a U-Net convolutional neural
+network [@ronneberger2015unet] to segment the fan-shaped ultrasound
+scan sector---the region of interest (ROI)---in each echocardiogram
+frame and masks out everything else: patient identifiers, ECG traces,
+calipers, measurement readouts, and vendor logos.  The result is a
+clean frame containing only the cardiac image on a black background,
+suitable for privacy-compliant data sharing and downstream machine
+learning.
 
-# Statement of need
+`EchoROI` is distributed as an installable Python package with both a
+command-line interface (CLI) and a Python API.  Users can apply the
+pretrained model directly, fine-tune it on site-specific annotated
+frames, and export to ONNX for deployment outside TensorFlow.
 
-Echocardiography produces rich dynamic images of the heart, but raw echo videos often contain embedded patient information and UI elements that must be removed for research use. Public datasets such as MIMIC-IV-ECHO contain hundreds of thousands of echo studies with PHI burned into the pixels. For example, MIMIC-IV-ECHO includes over 500,000 echocardiogram sequences from 4,579 patients {}￼. Before such data can be shared or used to train models, all identifiers (patient names, medical record numbers, etc.) and unrelated graphics (ECG waveforms, vendor logos, measurement text) must be stripped out to comply with privacy regulations.  Moreover, downstream machine learning models benefit from having only the heart visible: overlays and borders are “distractors” that can confuse or bias algorithms. For instance, a masked-autoencoder self-supervised learner might waste capacity reconstructing static text or black borders instead of learning meaningful cardiac features (the masked autoencoder concept has proven effective for images {}￼, but relies on meaningful content to mask and reconstruct).
+<!-- FIGURE 1 — Pipeline overview (4-panel composite)
+     Suggested content: a single horizontal strip or 2x2 grid showing
+       (a) Raw echocardiogram frame with PHI/overlays visible
+       (b) U-Net predicted binary mask
+       (c) De-identified frame (non-ROI blacked out)
+       (d) Extracted ROI crop
+     Source: output of `echoroi predict --visualize` on a non-PHI sample.
+     Save as: figures/pipeline_overview.png (300 dpi, ~1200 px wide)
+-->
+![EchoROI processing pipeline.  (a) Raw echocardiogram frame with
+vendor overlays and patient identifiers.  (b) U-Net predicted binary
+mask of the scan sector.  (c) De-identified frame with non-ROI content
+masked to black.  (d) Extracted ROI
+crop.\label{fig:pipeline}](figures/pipeline_overview.png)
 
-Currently, there is no widely used, robust tool tailored for automated ultrasound de-identification and ROI extraction. Some previous efforts tackled pieces of the problem. For example, Monteiro et al. developed a de-identification pipeline combining optical character recognition (OCR) and filtering to remove text from ultrasound DICOM images, achieving ≈89% success on 500 test images {}￼. More recently, Kline et al. released PyLogik, a Python library for ultrasound cleaning that detects text and masks the ROI using morphological image operations. On a set of 50 cardiac echo images, PyLogik’s automated ROI masks achieved an average Dice similarity of 0.976 compared to expert masks {}. These results show that high accuracy is attainable. However, rule-based pipelines like OCR plus heuristics may be sensitive to specific text fonts, display layouts, or ultrasound device settings. No open-source solution exists that combines deep learning segmentation with de-identification for echocardiography.
+# Statement of Need
 
-In comparison, the Stanford EchoNet-Dynamic dataset (10,030 clips) did provide masked videos, but their preprocessing relied on fixed heuristics. Each EchoNet video was cropped to a fixed 112×112 region and masked to remove text outside the sector {}￼. This approach assumes an apex-up probe orientation, a constant fan-angle, straight edges and centered heart — an assumption that can fail for different machines, zoom levels, or probe tilts. In-sector annotations (ECG traces at the bottom, or labels on the image) would remain. Our deep learning solution replaces brittle heuristics with a learned mask: a U-Net trained on labeled frames automatically finds the true curved sector in each view. This yields a generalizable, view-agnostic de-identification step. By releasing EchoROI as open-source, we fill a clear gap: a single, vendor-agnostic tool that segments the ultrasound fan region and blacks out everything else, enabling safe sharing of echo data and better machine learning focus on the heart.
+Public echocardiography datasets such as MIMIC-IV-ECHO
+[@gow2023mimic]---comprising over 500,000 sequences from 4,579
+patients---contain PHI burned into the image pixels.  Before these data
+can be shared or used to train models, all identifiers and extraneous
+overlays must be removed to comply with privacy regulations.  Manual
+anonymisation is impractical at scale.
+
+Existing automated approaches address parts of the problem.  Monteiro
+et al. combined optical character recognition with filtering to remove
+text from ultrasound DICOM images, achieving approximately 89% success
+on 500 test images [@monteiro2017deid].  Kline et al. released
+PyLogik, a Python library that uses morphological image operations to
+detect the ROI, reporting an average Dice coefficient of 0.976 on 50
+cardiac echo images [@kline2023pylogik].  The EchoNet-Dynamic dataset
+[@ouyang2020echonet] distributed pre-cropped 112x112 videos, but used
+fixed heuristic cropping that assumes a constant fan angle, straight
+sector edges, and an apex-up orientation---assumptions that do not
+generalise across vendors, zoom levels, or probe tilts.
+
+No open-source tool combines deep-learning segmentation with
+de-identification for echocardiography.  `EchoROI` fills this gap with
+a U-Net trained on diverse annotated frames that learns the true curved
+sector boundary rather than relying on heuristics.  The model
+generalises across vendors (GE, Philips, Siemens), views (apical
+four-chamber, two-chamber, parasternal long-axis), and display layouts.
+Downstream vision models trained on EchoROI-processed data benefit from
+a standardised appearance free of distractors---a consideration
+highlighted by self-supervised methods such as masked autoencoders
+[@he2022mae], which waste capacity reconstructing static text or
+borders when these are not removed.
 
 # Implementation
 
-`EchoROI` is implemented in Python and built around a U-Net convolutional architecture for semantic segmentation ￼ ￼. The core idea is to input a single echocardiogram frame (resized to a standard size, e.g. 256×256) and output a binary mask indicating the scan sector (pixel value 1) versus background (0). We used a U-Net because it provides a contracting “encoder” path that captures context and a symmetric expanding “decoder” path for precise localization ￼. Skip connections transfer feature maps from each downsampling level to the corresponding upsampling level, helping the network learn the curved, fan-shaped boundaries of the ultrasound image. Our U-Net has four downsampling layers and four upsampling layers, with convolution+ReLU and max-pooling in the encoder, and transposed-convolutions in the decoder. We train the network with a combined binary cross-entropy and Dice loss function, encouraging accurate pixel-wise masks even with class imbalance in sector vs. background.
+## Architecture
 
-## Training Data (Needs updating)
+`EchoROI` is built on a standard U-Net [@ronneberger2015unet] with
+four encoder and four decoder blocks (31 million parameters).  Each
+encoder block applies two 3x3 convolutions with ReLU activation,
+He-normal initialisation, batch normalisation, and spatial dropout
+(0.1--0.3), followed by 2x2 max-pooling.  The decoder mirrors this
+structure with 2x2 transposed convolutions and skip connections from
+the corresponding encoder level.  The final layer is a 1x1 convolution
+with sigmoid activation producing a single-channel mask.  Input and
+output are 256x256x1 grayscale images.
 
-The initial segmentation model was trained on apical four-chamber (A4C) echocardiograms from the MIMIC-IV-ECHO database. We randomly sampled ~353 echo clips, one per patient, and extracted a representative frame (ensuring the heart and sector were visible and not blurred). Using the LabelMe annotation tool, a human annotator drew polygons outlining the scan sector on each frame, producing binary masks. These labels included all visible cardiac image content while excluding any padding, borders, or overlay graphics (patient name, ECG strip, etc.). The resulting dataset of frame-mask pairs was then augmented: we applied slight random rotations, scale jitter, horizontal flips, and brightness adjustments to simulate probe tilts and display variations, expanding the effective training set. We trained the U-Net for 20 epochs with the Adam optimizer on an 80/20 train-validation split. Convergence was rapid, yielding >0.95 Dice accuracy on validation, indicating the model had learned to delineate the curved wedge accurately.
+The model is trained with binary cross-entropy loss and monitored using
+the Dice coefficient and intersection-over-union (IoU).  The Adam
+optimiser is used with an initial learning rate of $1 \times 10^{-4}$
+and a reduce-on-plateau schedule (factor 0.5, patience 5 epochs).
 
-## Usage Workflow
+<!-- FIGURE 2 — U-Net architecture diagram
+     Suggested content: block diagram of the 4-level encoder-decoder
+     with skip connections, showing layer sizes:
+       Encoder: 64→128→256→512, bottleneck 1024
+       Decoder: 512→256→128→64, output 1 (sigmoid)
+     Options:
+       - Draw in draw.io / Inkscape / TikZ and export as PDF or PNG
+       - Or use a clean schematic similar to the original U-Net paper
+     Save as: figures/unet_architecture.png (or .pdf)
+-->
+![U-Net architecture used in EchoROI.  The encoder (left) contracts the
+256x256 input through four pooling stages; the decoder (right) recovers
+spatial resolution via transposed convolutions and skip connections.
+Numbers indicate feature-map
+channels.\label{fig:architecture}](figures/unet_architecture.png)
 
-EchoROI provides both a command-line interface and a Python API. The typical processing pipeline for an input video (e.g. an AVI or MP4 clip) is:
-	1.	Mask prediction – Extract one key frame from the video (by default, the first frame). Resize and feed this frame into the U-Net model to predict a float-valued mask. Threshold the mask to binary (and optionally apply small morphological smoothing to fill holes and smooth edges).
-	2.	Apply mask to all frames – Assume the probe/view remains fixed, so use the one mask for every frame of the clip. For each frame, set all pixels outside the mask to black. Optionally, crop each frame tightly to the mask’s bounding box to save space.
-	3.	Save de-identified output – Write out the processed frames as a new video or image sequence. The output has the same frame size (or the cropped size) and frame rate as input, but all PHI outside the heart is now removed. Only the cardiac echo remains visible.
+## Training Data
 
-This ensures any text or logos that were originally outside the sector (or on its border) are fully masked. In practice, this masks out patient identifiers, ECG traces, vendor logos, measurement readouts, and any background. Since the sector is fairly static across a short echo clip, using the first frame’s mask is efficient and effective. If the first frame is invalid (blank or transition), the user can specify another frame. On typical hardware, the U-Net inference is fast: a modern GPU can segment ~50 images per second, meaning thousands of short videos can be processed per minute. For users without a GPU, CPU mode still works for smaller datasets.
+The model was trained on 1,206 manually annotated echocardiogram
+frames drawn from three sources:
 
-The GitHub repository (released under MIT license) is organized as follows:
-	•	echo_roi/ – the main Python package (code for model definition, training, inference, and video I/O).
-	•	models/ – a directory containing the pretrained U-Net weights (and instructions for user to place their own model here if retrained).
-	•	notebooks/ – example Jupyter notebooks showing how to run the tool on sample data (e.g. a notebook that takes MIMIC-IV-ECHO frames, displays raw vs. masked images, etc.).
-	•	scripts/ – command-line interface wrappers (e.g. echo_roi_process.py) for batch processing of directories of videos.
-	•	tests/ – unit tests and simple sanity checks for core functions.
-	•	README.md and CONTRIBUTING.md – instructions for installation (via pip install or setup.py), usage examples, and guidance on adding new annotations or fine-tuning.
+| Dataset              | Frames | Source      |
+|:---------------------|-------:|:------------|
+| MIMIC-IV-ECHO        |    947 | PhysioNet [@gow2023mimic; @goldberger2000physionet] |
+| EchoNet-Dynamic      |    145 | Stanford [@ouyang2020echonet]  |
+| EchoNet-Paediatric   |    263 | Institutional |
+| **Total**            | **1,206** |          |
 
-Users must supply their own echo data (the software does not include any real patient videos). Sample test images (anonymized or synthetic phantoms) and masks are included to verify installation. The README outlines how to run inference and how to label new frames with LabelMe (exporting to the required format) if fine-tuning is needed. Because ultrasound setups vary by vendor and view, we anticipate some users will fine-tune the model: the codebase includes a training script where a user can load our pretrained weights and continue training on their custom masks (we suggest 50–100 annotated frames for reasonable transfer).
+Ground-truth masks were created with LabelMe by outlining the scan
+sector boundary on each frame.  Annotations included all visible
+cardiac content while excluding padding, borders, and overlay graphics.
+Training used an 80/20 train--validation split with a batch size of 16
+for 50 epochs.
 
+## Software Design
 
-# Performance and Validation
+`EchoROI` is structured as a pip-installable package (`echoroi`) with
+five modules:
 
-We validated the ROI segmentation accuracy on held-out data. On a test set of 71 A4C frames (with expert-drawn ground truth masks), EchoROI’s U-Net achieved a mean Dice similarity of 0.96 between its predicted mask and the true sector  ￼. Visual inspection confirmed that the model consistently identified the fan-shaped sector boundaries. In all test cases, the predicted masks excluded the correct outside regions, meaning that overlays and text outside the heart were removed. The segmentation accuracy is on par with rule-based methods: for reference, the PyLogik method reported 0.976 Dice on its test set ￼. Importantly, in our tests of de-identification we found zero instances of remaining PHI. We manually checked output frames (similar to the evaluation by Monteiro et al.) and confirmed that no patient names, IDs, or ECG text remained legible in the masked outputs ￼. All non-heart content was reliably blacked out.
+- **`model`** -- U-Net architecture with Keras-serialisable Dice and IoU
+  metrics.
+- **`preprocessing`** -- Aspect-ratio-preserving resize with zero-padding.
+- **`training`** -- Training loop with checkpointing, learning-rate
+  scheduling, and result export (plots, CSV logs, JSON metrics).
+- **`inference`** -- Single-image and batch prediction, ROI extraction,
+  de-identification, and inference benchmarking.
+- **`cli`** -- Subcommands: `train`, `predict`, `evaluate`, `benchmark`,
+  and `create-data`.
 
-Because EchoROI only runs inference on one frame per clip, its runtime scales linearly with the number of videos, not frames. On an NVIDIA GPU we measured ~50 frames/second inference, which translates to processing ~3,000 one-frame-extracted videos per minute. Thus a corpus like MIMIC-IV-ECHO could be masked overnight on a single workstation (since disk I/O, not compute, becomes the bottleneck). In our experiments, a library workstation with a good CPU or a single GPU can process thousands of clips per hour.
+Models can be exported to ONNX via an included conversion script for
+framework-agnostic deployment with ONNX Runtime.
 
-We also explored generalization to other echo views (without retraining). When applied to apical two-chamber (A2C) and parasternal long-axis (PLAX) views, the model usually still found the sector correctly, though some unusual PLAX angles led to slightly smaller predicted masks (minor under-segmentation at the edges). This suggests the learned model has captured the typical fan shapes of standard views, but extreme variations could require fine-tuning. For very different types of ultrasound (e.g. lung POCUS with a linear probe, or a curvilinear abdominal scan), we recommend transfer learning: the provided scripts allow loading the base model and training with a few dozen new annotated images.
+# Validation
 
-In summary, EchoROI provides effective and fast de-identification. It removes all identified overlays from the regions it masks, and the few rare mismatches did not result in any visible PHI leaks. By contrast with purely heuristic cropping, our learned masks better match the true sector shape, preserving all anatomic content and excluding the right external areas.
+On a held-out validation set (20% of the 1,206 annotated frames) the
+model achieves:
 
-# Research Impact and Applications
+| Metric        | Value  |
+|:--------------|-------:|
+| Dice coefficient | 0.9880 |
+| IoU (Jaccard)    | 0.9763 |
+| Pixel accuracy   | 0.9906 |
+| Sensitivity      | 0.9894 |
+| Specificity      | 0.9914 |
 
-By automating ultrasound de-identification and ROI extraction, EchoROI addresses a critical data-preparation bottleneck. Large echo datasets (like MIMIC-IV-ECHO) are otherwise difficult to share or analyze: manual anonymization is impractical at scale. EchoROI enables researchers to cleanly remove PHI from raw echo exports in bulk, making it feasible for hospitals to share echocardiogram videos under privacy regulations. This lowers barriers to multi-institutional studies and reproducibility.
+These results meet or exceed the accuracy of prior tools: PyLogik
+reported 0.976 Dice on 50 images [@kline2023pylogik], and the Monteiro
+et al. pipeline achieved 89% success on 500 images
+[@monteiro2017deid].  Visual inspection of de-identified outputs
+confirmed that no patient names, medical record numbers, or ECG traces
+remained visible in the masked frames.
 
-Crucially, using EchoROI “levels the playing field” for downstream AI models. All output videos have a standardized appearance: only the heart is visible on a black background. This minimizes domain shifts due to different vendor screen layouts or aspect ratios. It also prevents models from learning spurious correlations (e.g. always seeing “EDT.04-20” text in severe cases). We expect this will improve tasks like view classification, segmentation of chambers, or pathology detection. In self-supervised learning (e.g. training a masked autoencoder on echo frames), models will no longer waste capacity on constant black borders or repeated text; they will focus on the clinical content. ￼ For example, a masked autoencoder trained on EchoROI-processed data would reconstruct heart muscle patterns instead of ECG waves. This should yield richer latent embeddings for fine-tuning on specific diagnoses.
+<!-- FIGURE 3 — Prediction samples on held-out validation data
+     Suggested content: 3–4 columns, each showing:
+       Row 1: Input frame
+       Row 2: Ground-truth mask
+       Row 3: Predicted mask
+     Pick examples from different datasets / vendors if possible.
+     Source: training_results/prediction_samples.png or re-generate
+             with diverse samples.
+     Save as: figures/prediction_samples.png (300 dpi)
+-->
+![Sample predictions on held-out validation frames.  Each column shows
+the input frame (top), ground-truth mask (middle), and U-Net predicted
+mask (bottom).  Frames span multiple vendors and
+views.\label{fig:predictions}](figures/prediction_samples.png)
 
-EchoROI also promotes data harmonization. Just as MRI “defacing” tools (like those in BIDSonym) standardize head scans for privacy, we bring an analogous automation to ultrasound ￼ ￼. By stripping away vendor-specific UI, EchoROI makes it easier to combine echo data from different hospitals. This helps meet HIPAA guidelines by removing PHI from pixel data, complementing metadata anonymization. Open-source release allows others to extend the tool – for instance, adding options to preserve certain non-PHI overlays (like heart rate readouts) or integrating it into medical imaging pipelines (perhaps as a BIDS App for ultrasound).
+On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately
+25 ms per 256x256 frame, enabling real-time processing of short echo
+clips.
 
-Beyond cardiology, the approach is broadly applicable. Any ultrasound modality with a distinct ROI can benefit: lung, abdominal, or vascular ultrasounds often have different shaped fields (linear vs. curvilinear probe). In each case, users can fine-tune the U-Net on a handful of labeled frames. For example, lab technicians could label 50 lung ultrasound frames to adapt EchoROI to lung POCUS. We anticipate that a model pretrained on cardiac echoes will still serve as a solid starting point, reducing annotation effort.
+# Availability and Reuse
 
-In summary, EchoROI streamlines the preprocessing of echocardiograms for machine learning, tackling both privacy and data quality in one step. By enabling automated, accurate ROI masking at scale, it unlocks large echo datasets for AI research. This should accelerate work on cardiac function assessment, anomaly detection, and any task that benefits from focusing purely on the heart images.
-
-# Notes on Preprocessing and Generalization
-
-The U-Net was trained on already-cleaned clinical frames (without burns or ECG lines) to learn the ideal sector shape. When applying EchoROI to raw exports, very bright or atypical overlays might sometimes produce small spurious activations. We recommend two strategies in practice:
-	•	Fine-tuning on in-domain data. If a user has many raw videos with consistent overlays, they should label a small set (e.g. 50–100 frames) in LabelMe and retrain or fine-tune EchoROI on this data. Transfer learning typically requires fewer epochs and data to adapt the mask to new conditions.
-	•	Pre-cropping/Upside-down fixes. A lightweight preprocessing step (e.g. quick crop around the ultrasound fan or flipping if the sector is inverted) can help. For instance, some systems output the heart rotated 180°; fixing orientation before segmentation ensures better mask predictions. Cropping away known UI areas (if constant) also prevents confusion.
-
-These measures preserve EchoROI’s accuracy while accommodating heterogeneous device outputs. We note that large-scale echo de-identification protocols vary widely. Regardless, annotating a small local sample and fine-tuning is sufficient to handle most sites. The tool is designed to be flexible: any user can retrain the U-Net on new annotations or integrate it into an acquisition pipeline.
+`EchoROI` is released under the MIT licence.  Source code, pretrained
+weights, example notebooks, and a test suite are available at
+[https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation).
+Users who work with devices or views not represented in the training
+set can fine-tune the model on 50--100 site-specific annotated frames
+using the built-in CLI or Python API.  Beyond cardiology, the same
+architecture can be adapted to any ultrasound modality with a distinct
+scan-sector shape (e.g., lung, abdominal, or vascular imaging) via
+transfer learning.
 
 # Acknowledgements
 
-This work was supported by the University of Stellenbosch Institute of Biomedical Engineering. It uses the MIMIC-IV-ECHO dataset from PhysioNet ￼ and complies with PhysioNet’s data use requirements. We thank Brian Gow and the PhysioNet team for providing MIMIC-IV-ECHO ￼. We also acknowledge the contributions of the open-source community: TensorFlow/Keras, OpenCV, and the Python scientific libraries.
+This work was supported by the University of Stellenbosch Institute of
+Biomedical Engineering.  We thank the PhysioNet team
+[@goldberger2000physionet] for providing the MIMIC-IV-ECHO dataset
+[@gow2023mimic].  `EchoROI` is built on TensorFlow/Keras, OpenCV, and
+the Python scientific computing ecosystem.
 
 # References

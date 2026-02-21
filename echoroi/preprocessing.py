@@ -122,3 +122,50 @@ def visualize_samples(X: np.ndarray, Y: np.ndarray, n=3):
         axes[row, 1].imshow(mask, cmap="gray"); axes[row, 1].set_title("Mask"); axes[row, 1].axis("off")
         axes[row, 2].imshow(overlay); axes[row, 2].set_title("Overlay"); axes[row, 2].axis("off")
     plt.tight_layout(); plt.show()
+
+
+def create_sample_data(output_dir: str, num_samples: int = 10) -> None:
+    """Create synthetic ultrasound-like image/mask pairs for testing.
+
+    Generates grayscale images with a random fan-shaped sector and
+    matching binary masks.  Useful for verifying installation and
+    running the CLI without real patient data.
+
+    Args:
+        output_dir: Root directory; images/ and masks/ subdirs are created.
+        num_samples: Number of sample pairs to generate.
+    """
+    img_dir = os.path.join(output_dir, "images")
+    msk_dir = os.path.join(output_dir, "masks")
+    os.makedirs(img_dir, exist_ok=True)
+    os.makedirs(msk_dir, exist_ok=True)
+
+    for i in range(num_samples):
+        name = f"sample_{i:03d}.png"
+        h, w = 256, 256
+
+        # --- Synthetic image: noise + bright fan sector ---
+        img = np.random.randint(10, 40, (h, w), dtype=np.uint8)
+        mask = np.zeros((h, w), dtype=np.uint8)
+
+        # Random fan-shaped polygon (sector apex near top-centre)
+        cx = w // 2 + np.random.randint(-20, 20)
+        apex_y = np.random.randint(10, 40)
+        base_y = np.random.randint(200, 240)
+        half_w = np.random.randint(80, 120)
+
+        pts = np.array([
+            [cx, apex_y],
+            [cx - half_w, base_y],
+            [cx + half_w, base_y],
+        ], dtype=np.int32)
+
+        cv2.fillConvexPoly(mask, pts, 255)
+        # Add bright content inside the sector
+        sector_noise = np.random.randint(80, 200, (h, w), dtype=np.uint8)
+        img = np.where(mask > 0, sector_noise, img).astype(np.uint8)
+
+        cv2.imwrite(os.path.join(img_dir, name), img)
+        cv2.imwrite(os.path.join(msk_dir, name), mask)
+
+    print(f"Created {num_samples} sample image/mask pairs in {output_dir}")

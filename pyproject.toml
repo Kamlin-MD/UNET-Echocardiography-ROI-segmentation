@@ -72,10 +72,10 @@ export = [
 echoroi = "echoroi.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Kamlin-MD/echoroi"
-Repository = "https://github.com/Kamlin-MD/echoroi"
-Documentation = "https://github.com/Kamlin-MD/echoroi#readme"
-Issues = "https://github.com/Kamlin-MD/echoroi/issues"
+Homepage = "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
+Repository = "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
+Documentation = "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation#readme"
+Issues = "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/issues"
 
 # =============================================================================
 # Tool configuration
