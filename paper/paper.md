@@ -12,11 +12,14 @@ tags:
 authors:
   - name: Kamlin Ekambaram
     orcid: 0000-0002-1366-8451
-    affiliation: "1, 2"
+    affiliation: "1"
+  - name: Rensu Theart
+    orcid:
+    afflication: "2"
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine, South Africa
+  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
     index: 2
 date: 21 February 2026
 bibliography: paper.bib
@@ -24,200 +27,236 @@ bibliography: paper.bib
 
 # Summary
 
-Echocardiography is the most widely performed cardiac imaging modality,
-yet large-scale computational analysis of echocardiogram videos is
-hindered by protected health information (PHI) and vendor-specific
-overlays embedded directly in the pixel data.  `EchoROI` is an
-open-source Python package that uses a U-Net convolutional neural
-network [@ronneberger2015unet] to segment the fan-shaped ultrasound
-scan sector---the region of interest (ROI)---in each echocardiogram
-frame and masks out everything else: patient identifiers, ECG traces,
-calipers, measurement readouts, and vendor logos.  The result is a
-clean frame containing only the cardiac image on a black background,
-suitable for privacy-compliant data sharing and downstream machine
-learning.
+Echocardiography is the most widely performed cardiac imaging modality, yet
+large-scale computational analysis of echocardiogram videos is hindered by
+protected health information (PHI) and vendor-specific overlays that are often
+burned into the pixel data. `EchoROI` is an open-source Python package that uses
+a U-Net convolutional neural network [@ronneberger2015unet] to segment the
+fan-shaped ultrasound scan sector---the region of interest (ROI)---in each
+frame, and to mask out non-ROI content (e.g., identifiers, ECG traces, calipers,
+measurement readouts, and vendor logos). The resulting frames preserve the
+native scan-sector resolution while removing distracting background elements,
+facilitating dataset preprocessing for machine learning and enabling safer
+sharing of examples for teaching.
 
-`EchoROI` is distributed as an installable Python package with both a
-command-line interface (CLI) and a Python API.  Users can apply the
-pretrained model directly, fine-tune it on site-specific annotated
-frames, and export to ONNX for deployment outside TensorFlow.
+EchoROI is distributed as an installable Python package with both a command-line
+interface (CLI) and a Python API. Users can apply the pretrained model, fine-
+tune it on site-specific annotations, and export models to ONNX for deployment
+outside TensorFlow.
 
-<!-- FIGURE 1 — Pipeline overview (4-panel composite)
-     Suggested content: a single horizontal strip or 2x2 grid showing
-       (a) Raw echocardiogram frame with PHI/overlays visible
-       (b) U-Net predicted binary mask
-       (c) De-identified frame (non-ROI blacked out)
-       (d) Extracted ROI crop
-     Source: output of `echoroi predict --visualize` on a non-PHI sample.
-     Save as: figures/pipeline_overview.png (300 dpi, ~1200 px wide)
--->
-![EchoROI processing pipeline.  (a) Raw echocardiogram frame with
-vendor overlays and patient identifiers.  (b) U-Net predicted binary
-mask of the scan sector.  (c) De-identified frame with non-ROI content
-masked to black.  (d) Extracted ROI
-crop.\label{fig:pipeline}](figures/pipeline_overview.png)
+![EchoROI processing pipeline: raw input, predicted scan-sector mask,
+masked/de-identified output, and optional ROI extraction.](pipeline_overview.png)
 
 # Statement of Need
 
-Public echocardiography datasets such as MIMIC-IV-ECHO
-[@gow2023mimic]---comprising over 500,000 sequences from 4,579
-patients---contain PHI burned into the image pixels.  Before these data
-can be shared or used to train models, all identifiers and extraneous
-overlays must be removed to comply with privacy regulations.  Manual
-anonymisation is impractical at scale.
+Many echocardiography files contain PHI and vendor overlays rendered directly
+into the image, which restricts data sharing and introduces confounders for
+computer-vision models. Public datasets such as MIMIC-IV-ECHO [@gow2023mimic]
+contain identifiers and overlays that must be removed to support privacy-
+preserving research workflows; manual anonymisation is impractical for modern-
+scale collections.
 
-Existing automated approaches address parts of the problem.  Monteiro
-et al. combined optical character recognition with filtering to remove
-text from ultrasound DICOM images, achieving approximately 89% success
-on 500 test images [@monteiro2017deid].  Kline et al. released
-PyLogik, a Python library that uses morphological image operations to
-detect the ROI, reporting an average Dice coefficient of 0.976 on 50
-cardiac echo images [@kline2023pylogik].  The EchoNet-Dynamic dataset
-[@ouyang2020echonet] distributed pre-cropped 112x112 videos, but used
-fixed heuristic cropping that assumes a constant fan angle, straight
-sector edges, and an apex-up orientation---assumptions that do not
-generalise across vendors, zoom levels, or probe tilts.
+Existing tools address related subproblems. OCR-based pipelines remove text but
+may fail when overlays vary across vendors or appear in low-contrast regions
+[@monteiro2017deid]. Heuristic ROI detection approaches can perform well on
+limited layouts (e.g., fixed fan angle and orientation), but may not generalise
+across vendors, zoom levels, and probe tilts [@kline2023pylogik]. The
+EchoNet-Dynamic dataset distributed pre-cropped videos [@ouyang2020echonet],
+which simplifies modelling but discards the original pixel geometry and assumes
+stable display conventions.
 
-No open-source tool combines deep-learning segmentation with
-de-identification for echocardiography.  `EchoROI` fills this gap with
-a U-Net trained on diverse annotated frames that learns the true curved
-sector boundary rather than relying on heuristics.  The model
-generalises across vendors (GE, Philips, Siemens), views (apical
-four-chamber, two-chamber, parasternal long-axis), and display layouts.
-Downstream vision models trained on EchoROI-processed data benefit from
-a standardised appearance free of distractors---a consideration
-highlighted by self-supervised methods such as masked autoencoders
-[@he2022mae], which waste capacity reconstructing static text or
-borders when these are not removed.
+`EchoROI` provides an end-to-end, open-source workflow for learning the true
+scan-sector boundary with deep segmentation and using that boundary to standardise
+frames for downstream analysis. By explicitly modelling the curved sector edges,
+EchoROI avoids brittle cropping heuristics and supports diverse acquisition
+layouts. Standardising the field of view also reduces wasted model capacity on
+static overlays, which is particularly relevant for representation-learning
+approaches such as masked autoencoders [@he2022mae].
+
+# Usage
+
+EchoROI can be used from the command line for batch preprocessing or as a Python
+library within research pipelines.
+
+```bash
+# De-identify: black out everything outside the scan sector
+echoroi predict \
+  --model-path models/echoroi_unified.keras \
+  --input video_frames/ \
+  --output clean/ \
+  --deidentify
+
+# Fine-tune on site-specific annotations
+echoroi train \
+  --image-dir data/images \
+  --mask-dir data/masks \
+  --model-path models/echoroi_finetuned.keras \
+  --epochs 50 \
+  --batch-size 8 \
+  --learning-rate 1e-4 \
+  --results-dir training_results
+```
+
+```python
+from echoroi import UNetPredictor
+
+predictor = UNetPredictor("models/echoroi_unified.keras")
+mask = predictor.predict_single_image("frame.png")
+result = predictor.process_image_with_visualization(
+    "frame.png", save_path="output.png"
+)
+```
 
 # Implementation
 
 ## Architecture
 
-`EchoROI` is built on a standard U-Net [@ronneberger2015unet] with
-four encoder and four decoder blocks (31 million parameters).  Each
-encoder block applies two 3x3 convolutions with ReLU activation,
-He-normal initialisation, batch normalisation, and spatial dropout
-(0.1--0.3), followed by 2x2 max-pooling.  The decoder mirrors this
-structure with 2x2 transposed convolutions and skip connections from
-the corresponding encoder level.  The final layer is a 1x1 convolution
-with sigmoid activation producing a single-channel mask.  Input and
-output are 256x256x1 grayscale images.
+EchoROI uses a standard U-Net [@ronneberger2015unet] with four encoder and four
+decoder blocks (31 million parameters). Encoder blocks apply 3x3 convolutions
+with ReLU activation, He-normal initialisation, batch normalisation, and spatial
+dropout (0.1--0.3), followed by 2x2 max-pooling. The decoder mirrors this
+structure using transposed convolutions and skip connections. A final 1x1
+convolution with sigmoid activation produces a single-channel binary mask. Input
+and output are 256x256x1 grayscale images.
 
-The model is trained with binary cross-entropy loss and monitored using
-the Dice coefficient and intersection-over-union (IoU).  The Adam
-optimiser is used with an initial learning rate of $1 \times 10^{-4}$
-and a reduce-on-plateau schedule (factor 0.5, patience 5 epochs).
+Training uses binary cross-entropy loss and is monitored with Dice and
+intersection-over-union (IoU). Optimisation uses Adam with an initial learning
+rate of $1 \times 10^{-4}$ and a reduce-on-plateau schedule (factor 0.5,
+patience 5 epochs). The reference implementation is built in TensorFlow/Keras
+and was trained and evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
 
-<!-- FIGURE 2 — U-Net architecture diagram
-     Suggested content: block diagram of the 4-level encoder-decoder
-     with skip connections, showing layer sizes:
-       Encoder: 64→128→256→512, bottleneck 1024
-       Decoder: 512→256→128→64, output 1 (sigmoid)
-     Options:
-       - Draw in draw.io / Inkscape / TikZ and export as PDF or PNG
-       - Or use a clean schematic similar to the original U-Net paper
-     Save as: figures/unet_architecture.png (or .pdf)
+<!-- FIGURE 2 (placeholder) — Model diagram
+     Simple U-Net schematic with feature-map sizes and skip connections.
+     Save as: figures/unet_architecture.png
 -->
-![U-Net architecture used in EchoROI.  The encoder (left) contracts the
-256x256 input through four pooling stages; the decoder (right) recovers
-spatial resolution via transposed convolutions and skip connections.
-Numbers indicate feature-map
-channels.\label{fig:architecture}](figures/unet_architecture.png)
+![U-Net architecture used in EchoROI.](figures/unet_architecture.png)
 
 ## Training Data
 
-The model was trained on 1,206 manually annotated echocardiogram
-frames drawn from three sources:
+The model was trained on 1,356 manually annotated echocardiogram
+frame/mask pairs drawn from multiple sources:
 
-| Dataset              | Frames | Source      |
-|:---------------------|-------:|:------------|
-| MIMIC-IV-ECHO        |    947 | PhysioNet [@gow2023mimic; @goldberger2000physionet] |
-| EchoNet-Dynamic      |    145 | Stanford [@ouyang2020echonet]  |
-| EchoNet-Paediatric   |    263 | Institutional |
-| **Total**            | **1,206** |          |
+| Dataset                         | Frames | Source |
+|:--------------------------------|-------:|:-------|
+| MIMIC-IV-ECHO                   |    403 | PhysioNet [@gow2023mimic; @goldberger2000physionet] |
+| EchoNet-Dynamic                 |    145 | Stanford [@ouyang2020echonet] |
+| EchoNet-Paediatric              |    263 | Institutional |
+| A4C Cactus dataset              |     38 | Public dataset |
+| echoCP                          |     60 | Public dataset |
+| Private dataset (consented)     |     50 | Institutional (Mindray/Samsung) |
+| CardiacUDC + HMC-QU             |    397 | Public datasets |
+| **Total**                       | **1,356** | |
 
-Ground-truth masks were created with LabelMe by outlining the scan
-sector boundary on each frame.  Annotations included all visible
-cardiac content while excluding padding, borders, and overlay graphics.
-Training used an 80/20 train--validation split with a batch size of 16
-for 50 epochs.
+Ground-truth masks were created in LabelMe by outlining the scan-sector
+boundary. Annotations included all visible diagnostic content while excluding
+padding, borders, and overlay graphics. Training used a single 80/20
+train--validation split created once at training start by randomly shuffling the
+full dataset with a fixed seed. The split was not stratified by dataset source.
+Batch size was 16 and training ran for 50 epochs.
 
 ## Software Design
 
-`EchoROI` is structured as a pip-installable package (`echoroi`) with
-five modules:
-
-- **`model`** -- U-Net architecture with Keras-serialisable Dice and IoU
-  metrics.
-- **`preprocessing`** -- Aspect-ratio-preserving resize with zero-padding.
-- **`training`** -- Training loop with checkpointing, learning-rate
-  scheduling, and result export (plots, CSV logs, JSON metrics).
-- **`inference`** -- Single-image and batch prediction, ROI extraction,
-  de-identification, and inference benchmarking.
-- **`cli`** -- Subcommands: `train`, `predict`, `evaluate`, `benchmark`,
-  and `create-data`.
-
-Models can be exported to ONNX via an included conversion script for
-framework-agnostic deployment with ONNX Runtime.
+EchoROI is distributed as a pip-installable package (`echoroi`) with modular
+components for preprocessing, model definition, training, and inference. The CLI
+provides subcommands for training, prediction, evaluation, and benchmarking.
+Models can also be exported to ONNX for framework-agnostic deployment.
 
 # Validation
 
-On a held-out validation set (20% of the 1,206 annotated frames) the
-model achieves:
+On the validation split (20% of the 1,356 annotated frames), EchoROI achieves:
 
-| Metric        | Value  |
-|:--------------|-------:|
-| Dice coefficient | 0.9880 |
-| IoU (Jaccard)    | 0.9763 |
-| Pixel accuracy   | 0.9906 |
-| Sensitivity      | 0.9894 |
-| Specificity      | 0.9914 |
+| Metric            | Value  |
+|:------------------|-------:|
+| Dice coefficient  | 0.9880 |
+| IoU (Jaccard)     | 0.9763 |
+| Pixel accuracy    | 0.9906 |
+| Sensitivity       | 0.9894 |
+| Specificity       | 0.9914 |
 
-These results meet or exceed the accuracy of prior tools: PyLogik
-reported 0.976 Dice on 50 images [@kline2023pylogik], and the Monteiro
-et al. pipeline achieved 89% success on 500 images
-[@monteiro2017deid].  Visual inspection of de-identified outputs
-confirmed that no patient names, medical record numbers, or ECG traces
-remained visible in the masked frames.
+These segmentation results meet or exceed prior open approaches (e.g., PyLogik
+reported 0.976 Dice on 50 images [@kline2023pylogik]). No separate held-out test
+set was used; the final metrics are reported on the same validation split used
+for model selection (best checkpoint by `val_dice_coefficient`), and may modestly
+overestimate generalisation performance.
 
-<!-- FIGURE 3 — Prediction samples on held-out validation data
-     Suggested content: 3–4 columns, each showing:
-       Row 1: Input frame
-       Row 2: Ground-truth mask
-       Row 3: Predicted mask
-     Pick examples from different datasets / vendors if possible.
-     Source: training_results/prediction_samples.png or re-generate
-             with diverse samples.
-     Save as: figures/prediction_samples.png (300 dpi)
+De-identification quality was assessed by manual spot-checking of model outputs
+on the validation split. During LabelMe annotation, frames were also reviewed to
+ensure that PHI was not present within the scan-sector ground-truth masks used
+for training.
+
+On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately 25 ms per
+256x256 frame, enabling real-time preprocessing of short echo clips.
+
+<!-- FIGURE 3 — Qualitative segmentation results
+     Grid: input frame, ground-truth mask, predicted mask, masked output.
+     Include examples across vendors/views.
+
+     JOSS expects figures under paper/figures/. In this Overleaf preview
+     project the image is stored at the project root.
+     Target path for GitHub/JOSS: figures/prediction_samples.png
 -->
-![Sample predictions on held-out validation frames.  Each column shows
-the input frame (top), ground-truth mask (middle), and U-Net predicted
-mask (bottom).  Frames span multiple vendors and
-views.\label{fig:predictions}](figures/prediction_samples.png)
+![Sample predictions on held-out validation frames.](prediction_samples.png)
 
-On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately
-25 ms per 256x256 frame, enabling real-time processing of short echo
-clips.
+# Limitations
+
+EchoROI should be treated as a preprocessing and de-identification *aid* rather
+than a guarantee of complete PHI removal. Masking may fail for atypical layouts,
+low contrast, extreme zoom, handheld/POCUS devices, or when identifiers overlap
+or traverse the scan sector. Because PHI can appear inside the ROI, users should
+apply human-in-the-loop review and follow local governance procedures before
+external sharing of derived images or cine loops.
+
+<!-- FIGURE 4 (placeholder) — Failure cases and safety checks
+     Show 3--4 representative failure modes:
+       (a) text intersecting ROI,
+       (b) atypical layout,
+       (c) low-contrast borders,
+       (d) incorrect mask extent.
+     Optionally add recommended workflow: run model -> detect failures -> human review.
+     Save as: figures/failure_cases.png
+-->
+
+# Reproducibility
+
+A minimal reproduction of the reported segmentation metrics can be performed
+using the built-in evaluation command on a directory of images and masks:
+
+```bash
+echoroi evaluate \
+  --model-path models/echoroi_unified.keras \
+  --image-dir <IMAGE_DIR> \
+  --mask-dir <MASK_DIR> \
+  --output <EVAL_DIR>
+```
+
+The repository includes scripts and notebooks for training, evaluation, and
+ONNX export. Training data are not redistributed; users can retrain by providing
+matched image/mask pairs derived from their permitted datasets and/or
+site-specific LabelMe annotations.
 
 # Availability and Reuse
 
-`EchoROI` is released under the MIT licence.  Source code, pretrained
-weights, example notebooks, and a test suite are available at
-[https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation).
-Users who work with devices or views not represented in the training
-set can fine-tune the model on 50--100 site-specific annotated frames
-using the built-in CLI or Python API.  Beyond cardiology, the same
-architecture can be adapted to any ultrasound modality with a distinct
-scan-sector shape (e.g., lung, abdominal, or vascular imaging) via
-transfer learning.
+EchoROI is released under the MIT licence. Source code, pretrained weights,
+example notebooks, and a test suite are available at
+[https://github.com/Kamlin-MD/echoroi](https://github.com/Kamlin-MD/echoroi).
+
+The primary use case is research preprocessing of large echocardiography
+collections: standardising frames by removing non-diagnostic background content
+while preserving scan-sector resolution. A secondary use case is education
+(e.g., sharing de-identified stills or cine loops for teaching and FOAMed),
+subject to user responsibility and local policy.
+
+Users working with devices or layouts not represented in the training set can
+fine-tune the model on 50--100 annotated frames using the CLI or Python API.
+EchoROI is not a substitute for institutional de-identification procedures;
+governance review and human-in-the-loop workflows are recommended before any
+external data sharing.
 
 # Acknowledgements
 
-This work was supported by the University of Stellenbosch Institute of
-Biomedical Engineering.  We thank the PhysioNet team
-[@goldberger2000physionet] for providing the MIMIC-IV-ECHO dataset
-[@gow2023mimic].  `EchoROI` is built on TensorFlow/Keras, OpenCV, and
-the Python scientific computing ecosystem.
+This work was supported by the University of Stellenbosch Institute of Biomedical
+Engineering. We thank the PhysioNet team [@goldberger2000physionet] for
+providing the MIMIC-IV-ECHO dataset [@gow2023mimic]. EchoROI is built on
+TensorFlow/Keras, OpenCV, and the Python scientific computing ecosystem.
 
 # References
