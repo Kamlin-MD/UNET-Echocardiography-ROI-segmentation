@@ -12,14 +12,11 @@ tags:
 authors:
   - name: Kamlin Ekambaram
     orcid: 0000-0002-1366-8451
-    affiliation: "1"
-  - name: Rensu Theart
-    orcid:
-    afflication: "2"
+    affiliation: "1, 2"
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+  - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine, South Africa
     index: 2
 date: 21 February 2026
 bibliography: paper.bib
@@ -44,8 +41,17 @@ interface (CLI) and a Python API. Users can apply the pretrained model, fine-
 tune it on site-specific annotations, and export models to ONNX for deployment
 outside TensorFlow.
 
+<!-- FIGURE 1 — End-to-end pipeline
+     2x2 grid showing: raw frame, predicted mask, de-identified frame,
+     and ROI crop. Generate with `echoroi predict --visualize` on a
+     non-PHI sample.
+
+     JOSS expects figures under paper/figures/. In this Overleaf preview
+     project the image is stored at the project root.
+     Target path for GitHub/JOSS: figures/pipeline_overview.png
+-->
 ![EchoROI processing pipeline: raw input, predicted scan-sector mask,
-masked/de-identified output, and optional ROI extraction.](pipeline_overview.png)
+masked/de-identified output, and optional ROI extraction.](/Volumes/G-DRIVE PRO/UNET-Ultrasound-ROI-Segmentation/paper/figures/pipeline_overview.png)
 
 # Statement of Need
 
@@ -77,6 +83,19 @@ approaches such as masked autoencoders [@he2022mae].
 
 EchoROI can be used from the command line for batch preprocessing or as a Python
 library within research pipelines.
+
+For typical echocardiography acquisitions, the scan sector (ROI) is static over
+the duration of a cine loop: it is determined by probe geometry (most commonly a
+phased-array sector), the selected field of view (fan angle/depth), and
+user-controlled placement/orientation. EchoROI exploits this by predicting a
+mask on a single representative frame and then applying the same mask (and the
+resulting crop window) to all frames in the sequence.
+
+By default, the representative frame is selected automatically as the
+highest-entropy frame among the first few frames (to avoid blank/transition
+frames). Users can alternatively specify the representative frame index. This
+design reduces compute cost for large datasets while enforcing consistent
+preprocessing within each clip.
 
 ```bash
 # De-identify: black out everything outside the scan sector
@@ -148,11 +167,19 @@ frame/mask pairs drawn from multiple sources:
 | **Total**                       | **1,356** | |
 
 Ground-truth masks were created in LabelMe by outlining the scan-sector
-boundary. Annotations included all visible diagnostic content while excluding
-padding, borders, and overlay graphics. Training used a single 80/20
-train--validation split created once at training start by randomly shuffling the
-full dataset with a fixed seed. The split was not stratified by dataset source.
-Batch size was 16 and training ran for 50 epochs.
+boundary. For consistency, sector ROIs were annotated as polygons with a
+virtual apex (triangular sector) even for some curved-probe images where the
+true near-field boundary is an arc. Linear-probe (rectangular) ultrasound
+layouts were not included in training.
+
+Annotations included all visible diagnostic content while excluding padding,
+borders, and overlay graphics. Only one frame per input video sequence was
+included for training.
+
+Training used a single 80/20 train--validation split created once at training
+start by randomly shuffling the full dataset with a fixed seed. The split was
+not stratified by dataset source. Batch size was 16 and training ran for 50
+epochs.
 
 ## Software Design
 
@@ -202,9 +229,17 @@ On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately 25 ms per
 EchoROI should be treated as a preprocessing and de-identification *aid* rather
 than a guarantee of complete PHI removal. Masking may fail for atypical layouts,
 low contrast, extreme zoom, handheld/POCUS devices, or when identifiers overlap
-or traverse the scan sector. Because PHI can appear inside the ROI, users should
-apply human-in-the-loop review and follow local governance procedures before
-external sharing of derived images or cine loops.
+or traverse the scan sector.
+
+EchoROI is designed primarily for sector-shaped echocardiography views (most
+commonly phased-array probes). Curved-probe acquisitions may be approximated by
+a virtual-apex (triangular) sector mask, which can introduce boundary error near
+the probe face. Linear-probe (rectangular) ultrasound layouts were not included
+in training and are not expected to perform reliably.
+
+Because PHI can appear inside the ROI, users should apply human-in-the-loop
+review and follow local governance procedures before external sharing of derived
+images or cine loops.
 
 <!-- FIGURE 4 (placeholder) — Failure cases and safety checks
      Show 3--4 representative failure modes:
@@ -229,10 +264,29 @@ echoroi evaluate \
   --output <EVAL_DIR>
 ```
 
-The repository includes scripts and notebooks for training, evaluation, and
-ONNX export. Training data are not redistributed; users can retrain by providing
-matched image/mask pairs derived from their permitted datasets and/or
-site-specific LabelMe annotations.
+For end-to-end dataset preprocessing, the repository includes a worked example
+notebook (`04_dataset_preprocessing.ipynb`) demonstrating a DICOM-to-NPZ
+workflow using the exported ONNX model:
+
+1. Recursively discover DICOM files and load cine frames.
+2. Optionally normalise clip length to a fixed frame count (e.g., 32) using an
+   adaptive stride: evenly downsample when frames > target, or linearly
+   interpolate when frames < target.
+3. Resize to 256x256 with aspect-ratio preservation and zero-padding; convert to
+   float32 and normalise pixel intensities to [0, 1].
+4. Apply optional orientation transforms (horizontal/vertical flips and 90-degree
+   rotations) for dataset-specific DICOM compatibility.
+5. Select a representative frame automatically (highest Shannon entropy among the
+   first few frames) and run ONNX EchoROI inference to obtain an ROI mask.
+6. Broadcast the ROI mask across the full clip and compute an LV-focused square
+   crop from the representative-frame mask (threshold 0.5; square side length set
+   by the mask height and centred on the mask bounding box).
+7. Apply the crop to all frames, resize to 112x112, and save as compressed NPZ
+   arrays shaped (32, 112, 112).
+
+Training data are not redistributed; users can retrain by providing matched
+image/mask pairs derived from their permitted datasets and/or site-specific
+LabelMe annotations.
 
 # Availability and Reuse
 
