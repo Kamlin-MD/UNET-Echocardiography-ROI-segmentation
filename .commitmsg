@@ -1,17 +1,1 @@
-Rewrite DICOM preprocessing notebook for researcher usability
-
-notebooks/04_dataset_preprocessing.ipynb:
-- Clean rewrite: 7 sections, no redundancy, consistent numbering
-- Add representative frame selection (Shannon entropy) instead of
-  blind first-frame — avoids blank/transition frames
-- Add max_files config: None = all files, int = limit for test runs
-- Make adaptive stride optional: target_frames=None keeps original
-  frame count, int normalises all clips to that length
-- Add optional dependency install cell (pip, commented out)
-- Consolidate all helper functions into single cell (§4)
-- Single-file demo (§5) with 3-row visualisation
-- Batch processor (§6) respects max_files and target_frames
-- NPZ inspector (§7) no longer dumps full array to output
-
-paper/paper.md:
-- Minor edits
+Fix all ruff linter errors (E702, SIM117, B017, whitespace)

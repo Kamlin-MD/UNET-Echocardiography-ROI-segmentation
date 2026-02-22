@@ -6,21 +6,21 @@ and preparing image-mask pairs for U-Net training.
 """
 
 import os
-import cv2
-import numpy as np
-from glob import glob
-from typing import Tuple, Optional, List
 import warnings
+from glob import glob
+
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class UltrasoundPreprocessor:
     """Preprocess ultrasound images and ROI masks for UNet training."""
 
-    def __init__(self, img_size: Tuple[int, int] = (256, 256)):
+    def __init__(self, img_size: tuple[int, int] = (256, 256)):
         self.img_size = img_size
 
-    def resize_with_padding(self, img: np.ndarray, target_size: Optional[Tuple[int, int]] = None) -> np.ndarray:
+    def resize_with_padding(self, img: np.ndarray, target_size: tuple[int, int] | None = None) -> np.ndarray:
         """Resize image with padding while preserving aspect ratio."""
         if target_size is None:
             target_size = self.img_size
@@ -58,7 +58,7 @@ class UltrasoundPreprocessor:
         mask_bin = ((mask_resized > 127).astype(np.float32))[..., None]
         return mask_bin
 
-    def validate_data_paths(self, image_dir: str, mask_dir: str) -> List[str]:
+    def validate_data_paths(self, image_dir: str, mask_dir: str) -> list[str]:
         """Validate dataset directories and return matched pairs."""
         if not os.path.exists(image_dir) or not os.path.exists(mask_dir):
             raise FileNotFoundError("Image or mask directory not found.")
@@ -74,14 +74,14 @@ class UltrasoundPreprocessor:
         mask_names = [os.path.splitext(os.path.basename(f))[0] for f in mask_files]
 
         matched = [(i, mask_files[mask_names.index(n)])
-                   for i, n in zip(image_files, img_names) if n in mask_names]
+                   for i, n in zip(image_files, img_names, strict=False) if n in mask_names]
 
         if len(matched) == 0:
             raise ValueError("No matching image-mask pairs found.")
 
         return matched
 
-    def load_dataset(self, image_dir: str, mask_dir: str) -> Tuple[np.ndarray, np.ndarray]:
+    def load_dataset(self, image_dir: str, mask_dir: str) -> tuple[np.ndarray, np.ndarray]:
         """Load entire dataset of image-mask pairs."""
         pairs = self.validate_data_paths(image_dir, mask_dir)
         images, masks = [], []
@@ -90,7 +90,7 @@ class UltrasoundPreprocessor:
                 images.append(self.preprocess_image(img_path))
                 masks.append(self.preprocess_mask(mask_path))
             except Exception as e:
-                warnings.warn(f"Skipping {img_path}: {e}")
+                warnings.warn(f"Skipping {img_path}: {e}", stacklevel=2)
         X, Y = np.array(images, np.float32), np.array(masks, np.float32)
         print(f"Loaded {len(X)} samples → Images {X.shape}, Masks {Y.shape}")
         return X, Y
@@ -118,10 +118,17 @@ def visualize_samples(X: np.ndarray, Y: np.ndarray, n=3):
         img, mask = X[i].squeeze(), Y[i].squeeze()
         overlay = np.dstack([img, img, img])
         overlay[mask > 0.5, 0] = 1.0  # red overlay
-        axes[row, 0].imshow(img, cmap="gray"); axes[row, 0].set_title("Image"); axes[row, 0].axis("off")
-        axes[row, 1].imshow(mask, cmap="gray"); axes[row, 1].set_title("Mask"); axes[row, 1].axis("off")
-        axes[row, 2].imshow(overlay); axes[row, 2].set_title("Overlay"); axes[row, 2].axis("off")
-    plt.tight_layout(); plt.show()
+        axes[row, 0].imshow(img, cmap="gray")
+        axes[row, 0].set_title("Image")
+        axes[row, 0].axis("off")
+        axes[row, 1].imshow(mask, cmap="gray")
+        axes[row, 1].set_title("Mask")
+        axes[row, 1].axis("off")
+        axes[row, 2].imshow(overlay)
+        axes[row, 2].set_title("Overlay")
+        axes[row, 2].axis("off")
+    plt.tight_layout()
+    plt.show()
 
 
 def create_sample_data(output_dir: str, num_samples: int = 10) -> None:
