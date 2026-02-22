@@ -1,318 +1,174 @@
-# EchoROI
+# EchoROI — U-Net ROI Segmentation for Echocardiography
 
-[![CI](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![JOSS](https://img.shields.io/badge/JOSS-submitted-green.svg)](paper/paper.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![TensorFlow 2.x](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)](https://www.tensorflow.org/)
+[![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-1.x-purple.svg)](https://onnxruntime.ai/)
+[![Tests](https://img.shields.io/badge/Tests-23%2F23_passing-brightgreen.svg)](#testing)
 
-**U-Net deep-learning tool for echocardiographic ROI segmentation and de-identification.**
+A lightweight U-Net model that segments the **region of interest (ROI)** in
+echocardiography frames — removing scanner chrome, ECG traces, and text overlays
+so that downstream models receive only clinically relevant pixels.
 
-EchoROI provides a pretrained U-Net model that segments the ultrasound
-scan sector (region of interest) in echocardiogram frames and masks out
-everything else — patient identifiers, ECG traces, vendor overlays, and
-other non-diagnostic content. Users can apply the pretrained model
-directly or fine-tune on their own annotated data.
+Trained on 99 hand-labelled echocardiographic images spanning four-chamber,
+parasternal, and subcostal views, evaluated with Dice coefficient and
+visual overlay analysis.
 
----
-
-## Features
-
-- **Pretrained model** — ready-to-use weights trained on 1,355 annotated frames
-- **CLI and Python API** — single-image or batch prediction, de-identification, ROI extraction
-- **Fine-tuning** — retrain on custom datasets with a single command
-- **ONNX export** — convert to ONNX for framework-agnostic deployment
-- **Evaluation suite** — Dice, IoU, accuracy, sensitivity, specificity metrics
+> **Paper:** see [`paper/paper.md`](paper/paper.md) for the full JOSS-style manuscript.
 
 ---
 
-## Installation
+## Key Features
+
+| Feature | Detail |
+|---|---|
+| **Architecture** | Standard U-Net (31 M params, 4 encoder/decoder levels) |
+| **Input** | 256 × 256 × 1 grayscale (aspect-ratio preserving, zero-padded) |
+| **Output** | 256 × 256 × 1 binary mask (sigmoid, threshold 0.5) |
+| **Formats** | Keras (`.keras`, 373 MB) and ONNX (`.onnx`, 124 MB) |
+| **Performance** | Mean Dice 0.9587 on held-out test set |
+| **ONNX Runtime** | Cross-platform inference — no TensorFlow dependency |
+
+---
+
+## Quick Start
 
 ```bash
-git clone https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation.git
-cd UNET-Echocardiography-ROI-segmentation
-pip install -e .
-```
+# Clone
+git clone https://github.com/RonSheely/EchoROI.git
+cd EchoROI
 
-For development (linting, tests):
-
-```bash
+# Install
 pip install -e ".[dev]"
+
+# Run inference on a single image
+python -c "
+from echoroi import load_model, predict
+model = load_model()                       # loads models/echoroi_unified.keras
+mask = predict(model, 'path/to/frame.png') # returns (256,256,1) numpy array
+"
 ```
 
-Optional extras:
-
-```bash
-pip install -e ".[notebooks]"   # Jupyter support
-pip install -e ".[medical]"     # NIfTI / DICOM loaders
-pip install -e ".[export]"      # ONNX conversion (tf2onnx)
-```
-
----
-
-## Quick start
-
-### Command-line interface
-
-```bash
-# Predict a mask for a single image
-echoroi predict \
-    --model-path models/echoroi_unified.keras \
-    --input frame.png \
-    --output results/
-
-# Predict on a directory of images
-echoroi predict \
-    --model-path models/echoroi_unified.keras \
-    --input video_frames/ \
-    --output results/ \
-    --visualize
-
-# De-identify: black out everything outside the scan sector
-echoroi predict \
-    --model-path models/echoroi_unified.keras \
-    --input video_frames/ \
-    --output clean/ \
-    --deidentify
-
-# Extract cropped ROI regions
-echoroi predict \
-    --model-path models/echoroi_unified.keras \
-    --input frame.png \
-    --output results/ \
-    --extract-roi
-
-# Train a new model from scratch
-echoroi train \
-    --image-dir data/images \
-    --mask-dir data/masks \
-    --model-path models/echoroi_unified.keras \
-    --epochs 50 \
-    --batch-size 8 \
-    --learning-rate 1e-4 \
-    --results-dir training_results
-
-# Evaluate model on a test set
-echoroi evaluate \
-    --model-path models/echoroi_unified.keras \
-    --image-dir data/images \
-    --mask-dir data/masks \
-    --output evaluation_results
-
-# Benchmark inference speed
-echoroi benchmark \
-    --model-path models/echoroi_unified.keras \
-    --image-path data/images/sample_000.png \
-    --num-runs 20
-```
-
-### Python API
-
-```python
-from echoroi import UNetPredictor
-
-# Load pretrained model
-predictor = UNetPredictor("models/echoroi_unified.keras")
-
-# Predict a binary mask
-mask = predictor.predict_single_image("frame.png")
-
-# Full pipeline: visualisation + de-identification + ROI extraction
-result = predictor.process_image_with_visualization(
-    "frame.png", save_path="output.png"
-)
-
-# Batch prediction
-masks = predictor.predict_batch(["frame1.png", "frame2.png", "frame3.png"])
-
-# Benchmark
-stats = predictor.benchmark_inference_speed("frame.png", num_runs=20)
-```
-
-#### Fine-tuning from Python
-
-```python
-from echoroi import UNetTrainer
-
-trainer = UNetTrainer(
-    img_size=(256, 256),
-    learning_rate=1e-4,
-    batch_size=8,
-    epochs=20,
-    validation_split=0.2,
-)
-
-history = trainer.train(
-    image_dir="my_data/images",
-    mask_dir="my_data/masks",
-    model_save_path="models/echoroi_finetuned.keras",
-    results_dir="my_results",
-)
-
-# Save training plots and metrics
-trainer.save_results("my_results")
-```
-
----
-
-## Model architecture
-
-| Property | Value |
-|---|---|
-| Architecture | U-Net (4 encoder + 4 decoder blocks) |
-| Parameters | 31,031,745 |
-| Input | 256 x 256 x 1 (grayscale) |
-| Output | 256 x 256 x 1 (binary mask) |
-| Loss | Binary cross-entropy |
-| Metrics | Dice coefficient, IoU, accuracy |
-| Optimizer | Adam (lr = 1e-4) |
-
-The encoder uses 3x3 convolutions with ReLU activation, He-normal
-initialisation, spatial dropout (0.1–0.3), and 2x2 max-pooling. The
-decoder mirrors this with transposed convolutions and skip connections.
-
----
-
-## Training datasets
-
-The model was trained on 1,355 manually annotated echocardiogram frames
-spanning three public/institutional datasets. Annotations were created
-with [LabelMe](https://github.com/wkentaro/labelme).
-
-| Dataset | Samples | Source | Access |
-|---|---|---|---|
-| MIMIC-IV-ECHO | 947 | PhysioNet | [Credentialed](https://physionet.org/content/mimic-iv-echo/) |
-| EchoNet-Dynamic | 145 | Stanford | [Public](https://echonet.github.io/dynamic/) |
-| EchoNet-Paediatric | 263 | Institutional | By request |
-| **Total** | **1,355** | | |
-
-> **Note:** Training data is **not** included in this repository. The
-> pretrained model weights are provided in `models/`. To retrain, obtain
-> the original datasets and place matched image/mask pairs in `data/`.
-
-### Dataset limitations
-
-- Training covers common clinical echo machines (GE, Philips, Siemens).
-  Handheld / point-of-care (POCUS) devices with very different screen
-  layouts may produce lower-quality masks.
-- Fine-tuning on 50–100 annotated frames from the target device is
-  usually sufficient to adapt the model.
-
----
-
-## Training results
-
-Pre-computed metrics and visualisations are stored in `training_results/`:
-
-| Metric | Value |
-|---|---|
-| **Dice coefficient** | 0.9880 |
-| **IoU (Jaccard)** | 0.9763 |
-| **Accuracy** | 0.9906 |
-| **Sensitivity** | 0.9894 |
-| **Specificity** | 0.9914 |
-
-Training ran for 50 epochs (best checkpoint saved by `val_dice_coefficient`).
-Learning rate was reduced on plateau (factor 0.5, patience 5).
-
-```
-training_results/
-  training_history.png       Training / validation loss & metric curves
-  prediction_samples.png     Sample predictions on held-out validation data
-  metrics.json               Final Dice, IoU, accuracy, sensitivity, specificity
-  dataset_summary.json       Dataset size, hyperparameters, best metrics
-  training_log.csv           Per-epoch metrics
-```
-
----
-
-## Project layout
-
-```
-echoroi/                  Installable Python package
-  __init__.py               Package entry point and public API
-  model.py                  U-Net architecture, registered Dice & IoU metrics
-  preprocessing.py          Image/mask loading, resizing, normalisation
-  training.py               Training loop, callbacks, result saving
-  inference.py              Prediction, ROI extraction, de-identification
-  cli.py                    Command-line interface (train, predict, evaluate, benchmark)
-models/                   Pretrained model weights
-  echoroi_unified.keras     Keras model (355 MB)
-  echoroi_unified.onnx      ONNX model (118 MB)
-training_results/         Metrics, plots, and training artefacts
-notebooks/                Jupyter notebooks for exploration & reproducibility
-  01_training_and_evaluation.ipynb
-  02_onnx_conversion.ipynb
-  03_inference_demo.ipynb
-  04_dataset_preprocessing.ipynb
-paper/                    JOSS manuscript (paper.md, paper.bib, figures/)
-scripts/                  Utility scripts (not part of the package)
-  convert_labelme_to_masks.py   One-time: LabelMe JSON to PNG mask conversion
-  convert_to_onnx.py            Convert .keras to .onnx with validation
-tests/                    pytest suite
-```
-
----
-
-## ONNX export
-
-Convert the Keras model to ONNX for deployment outside TensorFlow:
-
-```bash
-pip install -e ".[export]"
-python scripts/convert_to_onnx.py
-```
-
-Use the ONNX model for inference with ONNX Runtime:
+### ONNX Inference (no TensorFlow)
 
 ```python
 import onnxruntime as ort
 import numpy as np
 
 sess = ort.InferenceSession("models/echoroi_unified.onnx")
-# input: float32 [1, 256, 256, 1], output: float32 [1, 256, 256, 1]
-pred = sess.run(None, {"input": image_batch})[0]
+# image: (1, 256, 256, 1) float32, normalised [0, 1]
+mask = sess.run(None, {"input": image})[0]
 ```
 
 ---
 
-## Development
+## DICOM Preprocessing Pipeline
+
+**Notebook [`04_dataset_preprocessing.ipynb`](notebooks/04_dataset_preprocessing.ipynb)**
+provides a complete, configurable pipeline for batch-processing echocardiography
+DICOM datasets using the ONNX model — no TensorFlow required.
+
+### What it does
+
+```
+DICOM files (recursive discovery)
+  → Extract frames
+  → Optional adaptive stride (e.g. normalise all clips to 32 frames)
+  → Resize to 256×256 (aspect-ratio preserving, zero-padded)
+  → Select representative frame (highest Shannon entropy)
+  → ONNX ROI inference → broadcast mask to all frames
+  → LV-focused square crop → resize to 112×112
+  → Save as compressed NPZ
+```
+
+### Key configuration options
+
+```python
+CONFIG = {
+    'target_frames': 32,    # None = keep original frame count; int = adaptive stride
+    'max_files':     None,  # None = process all; int = limit for test runs
+    'final_size':    (112, 112),
+    'use_gpu':       False, # set True for CUDA acceleration
+}
+```
+
+### Features
+
+- **Single-file demo** with step-by-step visualisation (input → ROI overlay → cropped output)
+- **Batch processor** with progress tracking, error handling, and summary statistics
+- **NPZ inspector** to verify saved outputs
+- **Representative frame selection** via Shannon entropy (avoids blank/transition frames)
+- **Hardware acceleration** — CUDA, CoreML, or CPU via ONNX Runtime providers
+- **Optional dependency installer** cell for quick environment setup
+
+---
+
+## Repository Structure
+
+```
+EchoROI/
+├── data/
+│   ├── images/          # 99 training images (PNG)
+│   └── masks/           # 99 binary masks (PNG, from LabelMe)
+├── models/
+│   ├── echoroi_unified.keras   # Trained Keras model (373 MB)
+│   └── echoroi_unified.onnx    # ONNX export (124 MB)
+├── notebooks/
+│   ├── 01_model_training.ipynb         # Training & evaluation
+│   ├── 02_onnx_conversion.ipynb        # ONNX export & validation
+│   ├── 03_qualitative_evaluation.ipynb # Visual evaluation
+│   └── 04_dataset_preprocessing.ipynb  # DICOM preprocessing pipeline
+├── echoroi/              # Python package
+│   ├── model.py          # U-Net architecture
+│   ├── preprocessing.py  # Image preprocessing
+│   └── inference.py      # Prediction utilities
+├── paper/
+│   ├── paper.md          # JOSS manuscript
+│   └── paper.bib         # References
+├── tests/                # 23 unit tests
+└── scripts/              # CLI utilities
+```
+
+---
+
+## Notebooks
+
+| # | Notebook | Description |
+|---|----------|-------------|
+| 01 | [Model Training](notebooks/01_model_training.ipynb) | End-to-end training, augmentation, evaluation |
+| 02 | [ONNX Conversion](notebooks/02_onnx_conversion.ipynb) | Export, validation, Keras-vs-ONNX comparison |
+| 03 | [Qualitative Evaluation](notebooks/03_qualitative_evaluation.ipynb) | Visual overlays, per-sample Dice, failure analysis |
+| 04 | [Dataset Preprocessing](notebooks/04_dataset_preprocessing.ipynb) | DICOM → NPZ pipeline using ONNX model |
+
+---
+
+## Testing
 
 ```bash
-make dev          # install with dev + notebook extras
-make test         # run pytest
-make lint         # run ruff linter
-make test-cov     # pytest with coverage report
-make train        # retrain model on data/
-make evaluate     # evaluate model on data/
-make onnx         # convert model to ONNX
-make clean        # remove build artefacts
+pytest tests/ -v
 ```
+
+All 23 tests cover model architecture, preprocessing, inference, and I/O.
 
 ---
 
-## Citation
+## How to Cite
 
 If you use EchoROI in your research, please cite:
 
 ```bibtex
-@article{echoroi2026,
-  title   = {EchoROI: A U-Net-based Python Tool for Echocardiographic ROI
-             Segmentation and De-identification},
-  author  = {Ekambaram, Kamlin},
-  journal = {Journal of Open Source Software},
-  year    = {2026}
+@article{sheely2025echoroi,
+  title     = {{EchoROI}: A U-Net Tool for Automatic Region-of-Interest
+               Segmentation in Echocardiography},
+  author    = {Sheely, Ron},
+  journal   = {Journal of Open Source Software},
+  year      = {2025},
+  note      = {Manuscript submitted}
 }
 ```
 
-See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
-
 ---
-
-## Contributing
-
-Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md)
-for guidelines.
 
 ## License
 
-[MIT](LICENSE)
+MIT — see [LICENSE](LICENSE).

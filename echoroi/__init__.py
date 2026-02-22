@@ -10,10 +10,10 @@ __version__ = "0.1.0"
 __author__ = "Kamlin Ekambaram"
 __email__ = "kamlin.ekambaram@gmail.com"
 
+from .inference import UNetPredictor
 from .model import UNetModel, dice_coefficient, iou_score
 from .preprocessing import UltrasoundPreprocessor
 from .training import UNetTrainer
-from .inference import UNetPredictor
 
 __all__ = [
     "UNetModel",
