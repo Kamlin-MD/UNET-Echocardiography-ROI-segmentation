@@ -162,17 +162,23 @@ and was trained and evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
 The model was trained on 1,356 manually annotated echocardiogram
 frame/mask pairs drawn from multiple sources:
 
-| Dataset                         | Frames | Source |
-|:--------------------------------|-------:|:-------|
-| MIMIC-IV-ECHO                   |    403 | PhysioNet [@gow2023mimic; @goldberger2000physionet] |
-| EchoNet-Dynamic                 |    145 | Stanford [@ouyang2020echonet] |
-| EchoNet-Paediatric              |    263 | Stanford [@reddy2022echonetpeds] |
-| CACTUS (A4C subset)             |     38 | Open access [@elmekki2025cactus] |
-| EchoCP                          |     60 | Kaggle [@wang2021echocp] |
-| Private dataset (consented)     |     50 | Institutional (Mindray/Samsung) |
-| CardiacUDC                      |    247 | Kaggle [@yang2023graphecho] |
-| HMC-QU                          |    150 | By request [@degerli2024hmcqu] |
-| **Total**                       | **1,356** | |
+| Dataset                     | Frames | Access       |
+|:----------------------------|-------:|:-------------|
+| MIMIC-IV-ECHO               |    403 | PhysioNet    |
+| EchoNet-Dynamic             |    145 | Stanford     |
+| EchoNet-Paediatric          |    263 | Stanford     |
+| CACTUS (A4C subset)         |     38 | Open access  |
+| EchoCP                      |     60 | Kaggle       |
+| Private dataset (consented) |     50 | Institutional|
+| CardiacUDC                  |    247 | Kaggle       |
+| HMC-QU                      |    150 | By request   |
+| **Total**                   | **1,356** |           |
+
+Sources: MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet], EchoNet-Dynamic
+[@ouyang2020echonet], EchoNet-Paediatric [@reddy2022echonetpeds], CACTUS
+[@elmekki2025cactus], EchoCP [@wang2021echocp], CardiacUDC [@yang2023graphecho],
+HMC-QU [@degerli2024hmcqu]. The private dataset comprises consented samples from
+Mindray and Samsung devices.
 
 Ground-truth masks were created in LabelMe by outlining the scan-sector
 boundary. For consistency, sector ROIs were annotated as polygons with a
