@@ -12,22 +12,22 @@ tags:
 authors:
   - name: Kamlin Ekambaram
     orcid: 0000-0002-1366-8451
-    affiliation: "1, 2"
+    affiliation: 1
     corresponding: true
   - name: Anurag Arnab
-    affiliation: 3
+    affiliation: 2
   - name: Philip Herbst
-    affiliation: 4
+    affiliation: 3
   - name: Rensu Theart
-    affiliation: 1
+    affiliation: 4
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine, South Africa
-    index: 2
   - name: Google DeepMind, United Kingdom
-    index: 3
+    index: 2
   - name: University of Stellenbosch, Division of Cardiology, South Africa
+    index: 3
+  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
     index: 4
 date: 3 March 2026
 bibliography: paper.bib
@@ -80,6 +80,15 @@ EchoROI avoids brittle cropping heuristics and supports diverse acquisition
 layouts. Standardising the field of view also reduces wasted model capacity on
 static overlays, which is particularly relevant for representation-learning
 approaches such as masked autoencoders [@he2022mae].
+
+Recent benchmarking work has shown that heterogeneous preprocessing and residual
+overlays can induce shortcut learning in echocardiography foundation models,
+harming cross-dataset generalisation [@taratynova2025cardiobench]. By providing
+consistent sector masking across vendors and acquisition settings, EchoROI can
+help stabilise benchmarks and mitigate acquisition-artifact confounds. Emerging
+multimodal pipelines that integrate cardiac imaging with transcriptomic and
+clinical data similarly depend on clean, standardised imaging inputs
+[@le2026imagingomics], further motivating robust automated preprocessing.
 
 # Usage
 
@@ -199,11 +208,16 @@ On the validation split (20% of the 1,356 annotated frames), EchoROI achieves:
 | Sensitivity       | 0.9894 |
 | Specificity       | 0.9914 |
 
-These segmentation results meet or exceed prior open approaches (e.g., PyLogik
-reported 0.976 Dice on 50 images [@kline2023pylogik]). No separate held-out test
-set was used; the final metrics are reported on the same validation split used
-for model selection (best checkpoint by `val_dice_coefficient`), and may modestly
-overestimate generalisation performance.
+These segmentation results meet or exceed prior open approaches. PyLogik
+reported 0.976 Dice on 50 images using heuristic morphological operations
+[@kline2023pylogik]; fixed sector-template methods can achieve comparable
+accuracy on single-vendor data but degrade when fan angle, depth, or display
+layout varies across vendors. EchoROI's learned segmentation generalises across
+the eight heterogeneous sources in the training set without vendor-specific
+tuning. No separate held-out test set was used; the final metrics are reported
+on the same validation split used for model selection (best checkpoint by
+`val_dice_coefficient`), and may modestly overestimate generalisation
+performance.
 
 De-identification quality was assessed by manual spot-checking of model outputs
 on the validation split. During LabelMe annotation, frames were also reviewed to
@@ -231,6 +245,12 @@ in training and are not expected to perform reliably.
 Because PHI can appear inside the ROI, users should apply human-in-the-loop
 review and follow local governance procedures before external sharing of derived
 images or cine loops.
+
+To support responsible use, the repository includes a model card documenting
+intended use, dataset composition, known failure modes, and performance
+limitations. Users are encouraged to inspect low-confidence masks (e.g., peak
+prediction probability below 0.5), atypical aspect ratios, or predicted ROIs
+with implausible geometry as indicators of potential masking failures.
 
 # Reproducibility
 
