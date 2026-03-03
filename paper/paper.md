@@ -13,12 +13,23 @@ authors:
   - name: Kamlin Ekambaram
     orcid: 0000-0002-1366-8451
     affiliation: "1, 2"
+    corresponding: true
+  - name: Anurag Arnab
+    affiliation: 3
+  - name: Philip Herbst
+    affiliation: 4
+  - name: Rensu Theart
+    affiliation: 1
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
   - name: University of KwaZulu-Natal, School of Clinical Medicine, Division of Emergency Medicine, South Africa
     index: 2
-date: 21 February 2026
+  - name: Google DeepMind, United Kingdom
+    index: 3
+  - name: University of Stellenbosch, Division of Cardiology, South Africa
+    index: 4
+date: 3 March 2026
 bibliography: paper.bib
 ---
 
@@ -41,17 +52,8 @@ interface (CLI) and a Python API. Users can apply the pretrained model, fine-
 tune it on site-specific annotations, and export models to ONNX for deployment
 outside TensorFlow.
 
-<!-- FIGURE 1 — End-to-end pipeline
-     2x2 grid showing: raw frame, predicted mask, de-identified frame,
-     and ROI crop. Generate with `echoroi predict --visualize` on a
-     non-PHI sample.
-
-     JOSS expects figures under paper/figures/. In this Overleaf preview
-     project the image is stored at the project root.
-     Target path for GitHub/JOSS: figures/pipeline_overview.png
--->
 ![EchoROI processing pipeline: raw input, predicted scan-sector mask,
-masked/de-identified output, and optional ROI extraction.](/Volumes/G-DRIVE PRO/UNET-Ultrasound-ROI-Segmentation/paper/figures/pipeline_overview.png)
+masked/de-identified output, and optional ROI extraction.](figures/pipeline_overview.png)
 
 # Statement of Need
 
@@ -132,7 +134,7 @@ result = predictor.process_image_with_visualization(
 
 EchoROI uses a standard U-Net [@ronneberger2015unet] with four encoder and four
 decoder blocks (31 million parameters). Encoder blocks apply 3x3 convolutions
-with ReLU activation, He-normal initialisation, batch normalisation, and spatial
+with ReLU activation, He-normal initialisation, and spatial
 dropout (0.1--0.3), followed by 2x2 max-pooling. The decoder mirrors this
 structure using transposed convolutions and skip connections. A final 1x1
 convolution with sigmoid activation produces a single-channel binary mask. Input
@@ -144,11 +146,7 @@ rate of $1 \times 10^{-4}$ and a reduce-on-plateau schedule (factor 0.5,
 patience 5 epochs). The reference implementation is built in TensorFlow/Keras
 and was trained and evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
 
-<!-- FIGURE 2 (placeholder) — Model diagram
-     Simple U-Net schematic with feature-map sizes and skip connections.
-     Save as: figures/unet_architecture.png
--->
-![U-Net architecture used in EchoROI.](figures/unet_architecture.png)
+![Modified U-Net architecture for echocardiographic ROI segmentation with same-padding, dropout regularisation, and binary sigmoid output. Feature map spatial dimensions are shown below each block; channel counts are shown above. Dashed boxes indicate dropout layers (p = 0.1–0.3, increasing with depth).](figures/figure_2.pdf)
 
 ## Training Data
 
@@ -159,11 +157,12 @@ frame/mask pairs drawn from multiple sources:
 |:--------------------------------|-------:|:-------|
 | MIMIC-IV-ECHO                   |    403 | PhysioNet [@gow2023mimic; @goldberger2000physionet] |
 | EchoNet-Dynamic                 |    145 | Stanford [@ouyang2020echonet] |
-| EchoNet-Paediatric              |    263 | Institutional |
-| A4C Cactus dataset              |     38 | Public dataset |
-| echoCP                          |     60 | Public dataset |
+| EchoNet-Paediatric              |    263 | Stanford [@reddy2022echonetpeds] |
+| CACTUS (A4C subset)             |     38 | Open access [@elmekki2025cactus] |
+| EchoCP                          |     60 | Kaggle [@wang2021echocp] |
 | Private dataset (consented)     |     50 | Institutional (Mindray/Samsung) |
-| CardiacUDC + HMC-QU             |    397 | Public datasets |
+| CardiacUDC                      |    247 | Kaggle [@yang2023graphecho] |
+| HMC-QU                          |    150 | By request [@degerli2024hmcqu] |
 | **Total**                       | **1,356** | |
 
 Ground-truth masks were created in LabelMe by outlining the scan-sector
@@ -214,15 +213,7 @@ for training.
 On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately 25 ms per
 256x256 frame, enabling real-time preprocessing of short echo clips.
 
-<!-- FIGURE 3 — Qualitative segmentation results
-     Grid: input frame, ground-truth mask, predicted mask, masked output.
-     Include examples across vendors/views.
-
-     JOSS expects figures under paper/figures/. In this Overleaf preview
-     project the image is stored at the project root.
-     Target path for GitHub/JOSS: figures/prediction_samples.png
--->
-![Sample predictions on held-out validation frames.](prediction_samples.png)
+![Sample predictions on held-out validation frames.](figures/prediction_samples.png)
 
 # Limitations
 
@@ -240,16 +231,6 @@ in training and are not expected to perform reliably.
 Because PHI can appear inside the ROI, users should apply human-in-the-loop
 review and follow local governance procedures before external sharing of derived
 images or cine loops.
-
-<!-- FIGURE 4 (placeholder) — Failure cases and safety checks
-     Show 3--4 representative failure modes:
-       (a) text intersecting ROI,
-       (b) atypical layout,
-       (c) low-contrast borders,
-       (d) incorrect mask extent.
-     Optionally add recommended workflow: run model -> detect failures -> human review.
-     Save as: figures/failure_cases.png
--->
 
 # Reproducibility
 
@@ -292,7 +273,7 @@ LabelMe annotations.
 
 EchoROI is released under the MIT licence. Source code, pretrained weights,
 example notebooks, and a test suite are available at
-[https://github.com/Kamlin-MD/echoroi](https://github.com/Kamlin-MD/echoroi).
+[https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation).
 
 The primary use case is research preprocessing of large echocardiography
 collections: standardising frames by removing non-diagnostic background content
