@@ -60,6 +60,13 @@ benchmark:
 onnx:
 	python scripts/convert_to_onnx.py
 
+# ------- Multi-env testing (tox) -------
+tox:
+	tox
+
+tox-install-test:
+	tox -e install-test
+
 # ------- Clean -------
 clean:
 	rm -rf build/ dist/ *.egg-info/ .ruff_cache/ .mypy_cache/ .pytest_cache/ htmlcov/

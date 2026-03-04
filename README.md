@@ -35,8 +35,8 @@ visual overlay analysis.
 
 ```bash
 # Clone
-git clone https://github.com/RonSheely/EchoROI.git
-cd EchoROI
+git clone https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation.git
+cd UNET-Echocardiography-ROI-segmentation
 
 # Install
 pip install -e ".[dev]"
