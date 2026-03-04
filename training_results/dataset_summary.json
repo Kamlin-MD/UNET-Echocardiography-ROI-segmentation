@@ -1,7 +1,7 @@
 {
-  "total_samples": 1206,
-  "training_samples": 964,
-  "validation_samples": 242,
+  "total_samples": 1355,
+  "training_samples": 1084,
+  "validation_samples": 271,
   "image_size": [
     256,
     256
