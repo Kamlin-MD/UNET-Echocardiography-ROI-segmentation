@@ -1,5 +1,5 @@
 ---
-title: 'EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification'
+title: 'EchoROI: U-Net-based ROI Segmentation and De-identification for Echocardiography'
 tags:
   - Python
   - medical imaging
@@ -33,8 +33,8 @@ bibliography: paper.bib
 
 Echocardiography is the most widely performed cardiac imaging modality, yet
 large-scale computational analysis of echocardiogram videos is hindered by
-protected health information (PHI) and vendor-specific overlays that are often
-burned into the pixel data. `EchoROI` is an open-source Python package that uses
+protected health information (PHI) and vendor-specific overlays that are frequently
+burned into the pixel data [@madani2018fast-088]. `EchoROI` is an open-source Python package that uses
 a U-Net convolutional neural network [@ronneberger2015unet] to segment the
 fan-shaped ultrasound scan sector---the region of interest (ROI)---in each
 frame, and to mask out non-ROI content (e.g., identifiers, ECG traces, calipers,
@@ -54,37 +54,27 @@ masked/de-identified output, and optional ROI extraction.](figures/pipeline_over
 # Statement of Need
 
 Many echocardiography files contain PHI and vendor overlays rendered directly
-into the image, which restricts data sharing and introduces confounders for
-computer-vision models. Public datasets such as MIMIC-IV-ECHO [@gow2023mimic]
+into pixel data, restricting data sharing and introduces confounders for
+computer-vision models [@panhuis2014systematic-d31]. Public datasets such as MIMIC-IV-ECHO [@gow2023mimic]
 contain identifiers and overlays that must be removed to support privacy-
 preserving research workflows; manual anonymisation is impractical for modern-
 scale collections.
 
-Existing tools address related subproblems. OCR-based pipelines remove text but
-may fail when overlays vary across vendors or appear in low-contrast regions
-[@monteiro2017deid]. Heuristic ROI detection approaches can perform well on
-limited layouts (e.g., fixed fan angle and orientation), but may not generalise
-across vendors, zoom levels, and probe tilts [@kline2023pylogik]. The
-EchoNet-Dynamic dataset distributed pre-cropped videos [@ouyang2020echonet],
-which simplifies modelling but discards the original pixel geometry and assumes
-stable display conventions. The heuristic pipeline used to prepare that dataset
-was tuned for a single vendor and acquisition protocol; it frequently left
-residual probe markers and scale bars in the cropped output, and its
-left-ventricle-centred crop may discard non-LV anatomy important for other
-downstream tasks. These artefacts can propagate into foundation models trained on
-the data, inducing shortcut learning or limiting cross-task transfer.
+Existing tools address related subproblems. OCR-based pipelines can remove textual overlays but may fail when display layouts vary across vendors or when overlays appear in low-contrast regions [@monteiro2017deid]. Heuristic ROI detection approaches work well for fixed imaging layouts but may not generalise across vendors, zoom levels, or probe orientations [@kline2023pylogik].
+
+Public datasets such as EchoNet-Dynamic distribute pre-cropped videos [@ouyang2020echonet], simplifying modelling but discarding the original pixel geometry and assuming stable display conventions. These heuristics were tuned for specific acquisition settings and may leave residual overlays or remove non-ventricular anatomy relevant for downstream tasks.
 
 `EchoROI` provides an end-to-end, open-source workflow for learning the true
 scan-sector boundary with deep segmentation and using that boundary to standardise
 frames for downstream analysis. By explicitly modelling the curved sector edges,
-EchoROI avoids brittle cropping heuristics and supports diverse acquisition
+EchoROI avoids fragile cropping heuristics, supporting diverse acquisition
 layouts. Including frames from both EchoNet-Dynamic and EchoNet-Paediatric in
 the training set (alongside six other heterogeneous sources) ensures the learned
 mask captures the full scan sector regardless of fan angle, depth, or vendor, and
 removes distracting overlay elements that heuristic methods miss.
 Standardising the field of view also reduces wasted model capacity on
 static overlays, which is particularly relevant for representation-learning
-approaches such as masked autoencoders [@he2022mae].
+approaches such as masked autoencoders [@he2022mae; @video_mae_2022].
 
 Recent benchmarking work has shown that heterogeneous preprocessing and residual
 overlays can induce shortcut learning in echocardiography foundation models,
@@ -185,7 +175,7 @@ Sources: MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet], EchoNet-Dynami
 HMC-QU [@degerli2024hmcqu]. The private dataset comprises consented samples from
 Mindray and Samsung devices.
 
-Ground-truth masks were created in LabelMe by outlining the scan-sector
+Ground-truth masks were created in LabelMe [@russell2008labelme-d8b] by outlining the scan-sector
 boundary. For consistency, sector ROIs were annotated as polygons with a
 virtual apex (triangular sector) even for some curved-probe images where the
 true near-field boundary is an arc. Linear-probe (rectangular) ultrasound
