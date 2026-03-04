@@ -14,17 +14,21 @@ authors:
     orcid: 0000-0002-1366-8451
     affiliation: 1
     corresponding: true
-  - name: Philip Herbst
+  - name: Anurag Arnab
     affiliation: 2
-  - name: Rensu Theart
+  - name: Philip Herbst
     affiliation: 3
+  - name: Rensu Theart
+    affiliation: 4
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: University of Stellenbosch, Division of Cardiology, South Africa
+  - name: Google DeepMind, United Kingdom
     index: 2
-  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+  - name: University of Stellenbosch, Division of Cardiology, South Africa
     index: 3
+  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+    index: 4
 date: 3 March 2026
 bibliography: paper.bib
 ---
@@ -54,11 +58,16 @@ masked/de-identified output, and optional ROI extraction.](figures/pipeline_over
 # Statement of Need
 
 Many echocardiography files contain PHI and vendor overlays rendered directly
-into pixel data, restricting data sharing and introduces confounders for
+into pixel data, restricting data sharing and introducing confounders for
 computer-vision models [@panhuis2014systematic-d31]. Public datasets such as MIMIC-IV-ECHO [@gow2023mimic]
 contain identifiers and overlays that must be removed to support privacy-
 preserving research workflows; manual anonymisation is impractical for modern-
-scale collections.
+scale collections. In prior work [@ekambaram2026mimicext], the authors manually
+segmented and cropped roughly 1,000 apical four-chamber echocardiograms from
+MIMIC-IV-ECHO using LabelMe [@russell2008labelme-d8b]---a mandatory preprocessing step before the data
+could be used for machine-learning analysis. That labour-intensive experience
+motivated the development of EchoROI as a general-purpose, learned alternative
+that scales to diverse echocardiography datasets without manual intervention.
 
 Existing tools address related subproblems. OCR-based pipelines can remove textual overlays but may fail when display layouts vary across vendors or when overlays appear in low-contrast regions [@monteiro2017deid]. Heuristic ROI detection approaches work well for fixed imaging layouts but may not generalise across vendors, zoom levels, or probe orientations [@kline2023pylogik].
 
@@ -169,10 +178,12 @@ frame/mask pairs drawn from multiple sources:
 | HMC-QU                      |    149 | By request   |
 | **Total**                   | **1,355** |           |
 
-Sources: MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet], EchoNet-Dynamic
-[@ouyang2020echonet], EchoNet-Paediatric [@reddy2022echonetpeds], CACTUS
-[@elmekki2025cactus], EchoCP [@wang2021echocp], CardiacUDC [@yang2023graphecho],
-HMC-QU [@degerli2024hmcqu]. The private dataset comprises consented samples from
+Sources: MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet; @ekambaram2026mimicext],
+EchoNet-Dynamic [@ouyang2020echonet], EchoNet-Paediatric [@reddy2022echonetpeds],
+CACTUS [@elmekki2025cactus], EchoCP [@wang2021echocp], CardiacUDC
+[@yang2023graphecho], HMC-QU [@degerli2024hmcqu]. The MIMIC-IV-ECHO annotations
+include frames drawn from the manually segmented A4C subset
+[@ekambaram2026mimicext]. The private dataset comprises consented samples from
 Mindray and Samsung devices.
 
 Ground-truth masks were created in LabelMe [@russell2008labelme-d8b] by outlining the scan-sector
@@ -311,7 +322,9 @@ external data sharing.
 # Acknowledgements
 
 This work was supported by the University of Stellenbosch Institute of Biomedical
-Engineering. We gratefully acknowledge the following dataset providers whose data
+Engineering. The manual A4C segmentation effort described in
+[@ekambaram2026mimicext] directly motivated the development of EchoROI.
+We gratefully acknowledge the following dataset providers whose data
 made the training of EchoROI possible: the PhysioNet team and Beth Israel
 Deaconess Medical Center for MIMIC-IV-ECHO [@gow2023mimic;
 @goldberger2000physionet]; the Stanford Artificial Intelligence in Medicine and
