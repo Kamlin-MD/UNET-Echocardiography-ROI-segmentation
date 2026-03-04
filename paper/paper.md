@@ -14,21 +14,17 @@ authors:
     orcid: 0000-0002-1366-8451
     affiliation: 1
     corresponding: true
-  - name: Anurag Arnab
-    affiliation: 2
   - name: Philip Herbst
-    affiliation: 3
+    affiliation: 2
   - name: Rensu Theart
-    affiliation: 4
+    affiliation: 3
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: Google DeepMind, United Kingdom
-    index: 2
   - name: University of Stellenbosch, Division of Cardiology, South Africa
-    index: 3
+    index: 2
   - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
-    index: 4
+    index: 3
 date: 3 March 2026
 bibliography: paper.bib
 ---
