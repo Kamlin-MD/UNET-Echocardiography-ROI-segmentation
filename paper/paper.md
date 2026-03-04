@@ -67,13 +67,22 @@ limited layouts (e.g., fixed fan angle and orientation), but may not generalise
 across vendors, zoom levels, and probe tilts [@kline2023pylogik]. The
 EchoNet-Dynamic dataset distributed pre-cropped videos [@ouyang2020echonet],
 which simplifies modelling but discards the original pixel geometry and assumes
-stable display conventions.
+stable display conventions. The heuristic pipeline used to prepare that dataset
+was tuned for a single vendor and acquisition protocol; it frequently left
+residual probe markers and scale bars in the cropped output, and its
+left-ventricle-centred crop may discard non-LV anatomy important for other
+downstream tasks. These artefacts can propagate into foundation models trained on
+the data, inducing shortcut learning or limiting cross-task transfer.
 
 `EchoROI` provides an end-to-end, open-source workflow for learning the true
 scan-sector boundary with deep segmentation and using that boundary to standardise
 frames for downstream analysis. By explicitly modelling the curved sector edges,
 EchoROI avoids brittle cropping heuristics and supports diverse acquisition
-layouts. Standardising the field of view also reduces wasted model capacity on
+layouts. Including frames from both EchoNet-Dynamic and EchoNet-Paediatric in
+the training set (alongside six other heterogeneous sources) ensures the learned
+mask captures the full scan sector regardless of fan angle, depth, or vendor, and
+removes distracting overlay elements that heuristic methods miss.
+Standardising the field of view also reduces wasted model capacity on
 static overlays, which is particularly relevant for representation-learning
 approaches such as masked autoencoders [@he2022mae].
 
@@ -312,8 +321,15 @@ external data sharing.
 # Acknowledgements
 
 This work was supported by the University of Stellenbosch Institute of Biomedical
-Engineering. We thank the PhysioNet team [@goldberger2000physionet] for
-providing the MIMIC-IV-ECHO dataset [@gow2023mimic]. EchoROI is built on
-TensorFlow/Keras, OpenCV, and the Python scientific computing ecosystem.
+Engineering. We gratefully acknowledge the following dataset providers whose data
+made the training of EchoROI possible: the PhysioNet team and Beth Israel
+Deaconess Medical Center for MIMIC-IV-ECHO [@gow2023mimic;
+@goldberger2000physionet]; the Stanford Artificial Intelligence in Medicine and
+Imaging (AIMI) Center for EchoNet-Dynamic [@ouyang2020echonet] and
+EchoNet-Paediatric [@reddy2022echonetpeds]; the authors of the CACTUS dataset
+[@elmekki2025cactus]; the EchoCP contributors [@wang2021echocp]; the
+CardiacUDC team [@yang2023graphecho]; and the HMC-QU research group
+[@degerli2024hmcqu]. EchoROI is built on TensorFlow/Keras, OpenCV, and the
+Python scientific computing ecosystem.
 
 # References
