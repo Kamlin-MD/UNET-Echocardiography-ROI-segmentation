@@ -150,6 +150,17 @@ pytest tests/ -v
 
 All 23 tests cover model architecture, preprocessing, inference, and I/O.
 
+### Note for macOS (Apple Silicon) users
+
+The `tensorflow-metal` GPU plugin can deadlock inside Jupyter kernels on
+some Apple Silicon configurations.  The inference notebook
+(`03_inference_demo.ipynb`) disables GPU devices automatically so that all
+operations run on the CPU.  This has no practical impact — inference on
+256 × 256 images takes less than 1 second per frame on CPU.
+
+If you are not using Jupyter (e.g. running via the CLI or a Python script)
+the Metal GPU works normally.
+
 ---
 
 ## How to Cite

@@ -162,10 +162,18 @@ class UNetModel:
         self.model.save(model_path)
 
 
-def load_pretrained_model(model_path: str) -> tf.keras.Model:
+def load_pretrained_model(model_path: str, compile: bool = False) -> tf.keras.Model:
     """Load a pre-trained U-Net model.
 
-    The registered ``dice_coefficient`` and ``iou_score`` functions are
-    resolved automatically by Keras during deserialisation.
+    By default the model is loaded without recompilation (``compile=False``),
+    which is sufficient for inference and avoids deserialisation issues
+    with custom metrics across different Keras versions.  Pass
+    ``compile=True`` if you need to resume training.
     """
-    return tf.keras.models.load_model(model_path)
+    custom_objects = {
+        "dice_coefficient": dice_coefficient,
+        "iou_score": iou_score,
+    }
+    return tf.keras.models.load_model(
+        model_path, custom_objects=custom_objects, compile=compile,
+    )
