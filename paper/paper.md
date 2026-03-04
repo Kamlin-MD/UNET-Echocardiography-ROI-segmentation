@@ -321,4 +321,3 @@ providing the MIMIC-IV-ECHO dataset [@gow2023mimic]. EchoROI is built on
 TensorFlow/Keras, OpenCV, and the Python scientific computing ecosystem.
 
 # References
-
