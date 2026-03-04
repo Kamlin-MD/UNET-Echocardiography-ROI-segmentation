@@ -38,7 +38,7 @@ classifiers = [
 ]
 dependencies = [
     "tensorflow>=2.12,<2.19",
-    "opencv-python>=4.6",
+    "opencv-python-headless>=4.6",
     "numpy>=1.23,<2.0",
     "scikit-learn>=1.2",
     "scikit-image>=0.20",
@@ -54,6 +54,7 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.0",
     "pre-commit>=3.0",
+    "tox>=4.0",
 ]
 notebooks = [
     "jupyter>=1.0",
