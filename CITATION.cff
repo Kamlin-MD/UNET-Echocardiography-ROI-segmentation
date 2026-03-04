@@ -5,6 +5,12 @@ authors:
   given-names: "Kamlin"
   orcid: "https://orcid.org/0000-0002-1366-8451"
   email: "kamlin.ekambaram@gmail.com"
+- family-names: "Arnab"
+  given-names: "Anurag"
+- family-names: "Herbst"
+  given-names: "Philip"
+- family-names: "Theart"
+  given-names: "Rensu"
 title: "EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification"
 version: 0.1.0
 date-released: 2026-02-21

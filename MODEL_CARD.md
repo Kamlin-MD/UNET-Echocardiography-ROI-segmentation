@@ -47,7 +47,7 @@
 
 ## Training Data
 
-The model was trained on 1,356 manually annotated echocardiogram frame/mask
+The model was trained on 1,355 manually annotated echocardiogram frame/mask
 pairs (80/20 train/validation split, fixed random seed) drawn from:
 
 | Dataset | Frames | Access |
@@ -59,8 +59,8 @@ pairs (80/20 train/validation split, fixed random seed) drawn from:
 | EchoCP | 60 | Kaggle |
 | Private dataset (consented) | 50 | Institutional (Mindray/Samsung) |
 | CardiacUDC | 247 | Kaggle |
-| HMC-QU | 150 | By request to authors |
-| **Total** | **1,356** | |
+| HMC-QU | 149 | By request to authors |
+| **Total** | **1,355** | |
 
 ### Annotation protocol
 
@@ -82,7 +82,7 @@ sequence was included.
 
 ## Performance
 
-### Validation split metrics (20% of 1,356 frames)
+### Validation split metrics (20% of 1,355 frames)
 
 | Metric | Value |
 |:-------|------:|

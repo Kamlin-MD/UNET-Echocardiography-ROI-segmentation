@@ -4,15 +4,15 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![TensorFlow 2.x](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)](https://www.tensorflow.org/)
 [![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-1.x-purple.svg)](https://onnxruntime.ai/)
-[![Tests](https://img.shields.io/badge/Tests-23%2F23_passing-brightgreen.svg)](#testing)
+[![Tests](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/actions/workflows/ci.yml)
 
 A lightweight U-Net model that segments the **region of interest (ROI)** in
 echocardiography frames — removing scanner chrome, ECG traces, and text overlays
 so that downstream models receive only clinically relevant pixels.
 
-Trained on 99 hand-labelled echocardiographic images spanning four-chamber,
-parasternal, and subcostal views, evaluated with Dice coefficient and
-visual overlay analysis.
+Trained on 1,355 annotated echocardiographic frames spanning four-chamber,
+parasternal, and subcostal views across eight datasets, achieving a Dice
+coefficient of 0.9880 on the held-out validation split.
 
 > **Paper:** see [`paper/paper.md`](paper/paper.md) for the full JOSS-style manuscript.
 
@@ -26,7 +26,7 @@ visual overlay analysis.
 | **Input** | 256 × 256 × 1 grayscale (aspect-ratio preserving, zero-padded) |
 | **Output** | 256 × 256 × 1 binary mask (sigmoid, threshold 0.5) |
 | **Formats** | Keras (`.keras`, 373 MB) and ONNX (`.onnx`, 124 MB) |
-| **Performance** | Mean Dice 0.9587 on held-out test set |
+| **Performance** | Mean Dice 0.9880 on held-out validation set |
 | **ONNX Runtime** | Cross-platform inference — no TensorFlow dependency |
 
 ---
@@ -43,9 +43,9 @@ pip install -e ".[dev]"
 
 # Run inference on a single image
 python -c "
-from echoroi import load_model, predict
-model = load_model()                       # loads models/echoroi_unified.keras
-mask = predict(model, 'path/to/frame.png') # returns (256,256,1) numpy array
+from echoroi import UNetPredictor
+predictor = UNetPredictor('models/echoroi_unified.keras')
+mask = predictor.predict_single_image('path/to/frame.png')  # (256,256,1) array
 "
 ```
 
@@ -108,16 +108,16 @@ CONFIG = {
 ```
 EchoROI/
 ├── data/
-│   ├── images/          # 99 training images (PNG)
-│   └── masks/           # 99 binary masks (PNG, from LabelMe)
+│   ├── images/          # 1,355 training images (PNG)
+│   └── masks/           # 1,355 binary masks (PNG, from LabelMe)
 ├── models/
 │   ├── echoroi_unified.keras   # Trained Keras model (373 MB)
 │   └── echoroi_unified.onnx    # ONNX export (124 MB)
 ├── notebooks/
-│   ├── 01_model_training.ipynb         # Training & evaluation
-│   ├── 02_onnx_conversion.ipynb        # ONNX export & validation
-│   ├── 03_qualitative_evaluation.ipynb # Visual evaluation
-│   └── 04_dataset_preprocessing.ipynb  # DICOM preprocessing pipeline
+│   ├── 01_training_and_evaluation.ipynb # Training & evaluation
+│   ├── 02_onnx_conversion.ipynb         # ONNX export & validation
+│   ├── 03_inference_demo.ipynb          # Inference & visualisation
+│   └── 04_dataset_preprocessing.ipynb   # DICOM preprocessing pipeline
 ├── echoroi/              # Python package
 │   ├── model.py          # U-Net architecture
 │   ├── preprocessing.py  # Image preprocessing
@@ -135,9 +135,9 @@ EchoROI/
 
 | # | Notebook | Description |
 |---|----------|-------------|
-| 01 | [Model Training](notebooks/01_model_training.ipynb) | End-to-end training, augmentation, evaluation |
+| 01 | [Training & Evaluation](notebooks/01_training_and_evaluation.ipynb) | End-to-end training, augmentation, evaluation |
 | 02 | [ONNX Conversion](notebooks/02_onnx_conversion.ipynb) | Export, validation, Keras-vs-ONNX comparison |
-| 03 | [Qualitative Evaluation](notebooks/03_qualitative_evaluation.ipynb) | Visual overlays, per-sample Dice, failure analysis |
+| 03 | [Inference Demo](notebooks/03_inference_demo.ipynb) | Inference, visualisation, ROI extraction |
 | 04 | [Dataset Preprocessing](notebooks/04_dataset_preprocessing.ipynb) | DICOM → NPZ pipeline using ONNX model |
 
 ---
@@ -157,13 +157,13 @@ All 23 tests cover model architecture, preprocessing, inference, and I/O.
 If you use EchoROI in your research, please cite:
 
 ```bibtex
-@article{sheely2025echoroi,
-  title     = {{EchoROI}: A U-Net Tool for Automatic Region-of-Interest
-               Segmentation in Echocardiography},
-  author    = {Sheely, Ron},
-  journal   = {Journal of Open Source Software},
-  year      = {2025},
-  note      = {Manuscript submitted}
+@article{ekambaram2026echoroi,
+  title   = {{EchoROI}: A {U-Net}-based Python Tool for Echocardiographic
+             {ROI} Segmentation and De-identification},
+  author  = {Ekambaram, Kamlin and Arnab, Anurag and Herbst, Philip and
+             Theart, Rensu},
+  journal = {Journal of Open Source Software},
+  year    = {2026}
 }
 ```
 

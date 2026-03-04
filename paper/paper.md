@@ -159,7 +159,7 @@ and was trained and evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
 
 ## Training Data
 
-The model was trained on 1,356 manually annotated echocardiogram
+The model was trained on 1,355 manually annotated echocardiogram
 frame/mask pairs drawn from multiple sources:
 
 | Dataset                     | Frames | Access       |
@@ -171,8 +171,8 @@ frame/mask pairs drawn from multiple sources:
 | EchoCP                      |     60 | Kaggle       |
 | Private dataset (consented) |     50 | Institutional|
 | CardiacUDC                  |    247 | Kaggle       |
-| HMC-QU                      |    150 | By request   |
-| **Total**                   | **1,356** |           |
+| HMC-QU                      |    149 | By request   |
+| **Total**                   | **1,355** |           |
 
 Sources: MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet], EchoNet-Dynamic
 [@ouyang2020echonet], EchoNet-Paediatric [@reddy2022echonetpeds], CACTUS
@@ -204,7 +204,7 @@ Models can also be exported to ONNX for framework-agnostic deployment.
 
 # Validation
 
-On the validation split (20% of the 1,356 annotated frames), EchoROI achieves:
+On the validation split (20% of the 1,355 annotated frames), EchoROI achieves:
 
 | Metric            | Value  |
 |:------------------|-------:|
