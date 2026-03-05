@@ -107,10 +107,11 @@ mask on a single representative frame and then applying the same mask (and the
 resulting crop window) to all frames in the sequence.
 
 By default, the representative frame is selected automatically as the
-highest-entropy frame among the first few frames (to avoid blank/transition
-frames). Users can alternatively specify the representative frame index. This
-design reduces compute cost for large datasets while enforcing consistent
-preprocessing within each clip.
+highest-entropy frame among the first few frames, where frame entropy is
+the Shannon entropy of the grayscale pixel intensity histogram (to avoid
+blank or transition frames). Users can alternatively specify the
+representative frame index. This design reduces compute cost for large
+datasets while enforcing consistent preprocessing within each clip.
 
 ```bash
 # De-identify: black out everything outside the scan sector
@@ -145,21 +146,53 @@ result = predictor.process_image_with_visualization(
 
 ## Architecture
 
-EchoROI uses a standard U-Net [@ronneberger2015unet] with four encoder and four
-decoder blocks (31 million parameters). Encoder blocks apply 3x3 convolutions
-with ReLU activation, He-normal initialisation, and spatial
-dropout (0.1--0.3), followed by 2x2 max-pooling. The decoder mirrors this
-structure using transposed convolutions and skip connections. A final 1x1
-convolution with sigmoid activation produces a single-channel binary mask. Input
-and output are 256x256x1 grayscale images.
+EchoROI adapts the U-Net encoder--decoder architecture [@ronneberger2015unet],
+chosen for its established effectiveness in biomedical image segmentation
+and its ability to learn accurate masks from limited training data.
+The model has four encoder and four decoder blocks (31 million parameters).
+Compared with the original U-Net the following modifications were made:
 
-Training uses binary cross-entropy loss and is monitored with Dice and
-intersection-over-union (IoU). Optimisation uses Adam with an initial learning
-rate of $1 \times 10^{-4}$ and a reduce-on-plateau schedule (factor 0.5,
-patience 5 epochs). The reference implementation is built in TensorFlow/Keras
-and was trained and evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
+- **Same-padding** replaces valid-padding, so that encoder and decoder feature
+  maps share the same spatial dimensions at each level and skip connections
+  can be concatenated directly without cropping.
+- **He-normal initialisation** [@he2015delving] is used for all convolutional
+  layers.
+- **Dropout regularisation** [@srivastava2014dropout] is applied after the
+  first convolution in every encoder, bottleneck, and decoder block, with
+  rates increasing with depth (0.1 at the shallowest blocks, 0.2 at the
+  intermediate blocks, and 0.3 at the bottleneck). The increasing schedule
+  regularises the higher-capacity deeper layers more aggressively, which we
+  found empirically reduced overfitting on the relatively small (1,355-image)
+  training set. Dropout is a common regularisation strategy in U-Net
+  variants for medical image segmentation and is especially important when the
+  training corpus is limited and the model must generalise across heterogeneous
+  acquisition settings.
+- **Sigmoid output** with a single-channel 1x1 convolution replaces the
+  multi-class softmax head, producing a binary mask.
 
-![Modified U-Net architecture for echocardiographic ROI segmentation with same-padding, dropout regularisation, and binary sigmoid output. Feature map spatial dimensions are shown below each block; channel counts are shown above. Dashed boxes indicate dropout layers (p = 0.1–0.3, increasing with depth).](figures/figure_2.pdf)
+Encoder blocks apply two successive 3x3 convolutions with ReLU activation
+followed by 2x2 max-pooling. The decoder mirrors this structure using 2x2
+transposed convolutions for upsampling and skip connections from the
+corresponding encoder level. Input and output are 256x256x1 grayscale images.
+
+Training uses binary cross-entropy loss. Dice coefficient and
+intersection-over-union (IoU) are monitored as evaluation metrics; both use a
+Laplace smoothing constant of $\epsilon = 10^{-6}$ to ensure numerical
+stability. Optimisation uses Adam with an initial learning rate of
+$1 \times 10^{-4}$ and a reduce-on-plateau schedule (factor 0.5, patience
+5 epochs). The lightweight architecture (31 M parameters, 256x256 input) was
+chosen so that inference remains feasible on modest or edge-class hardware
+(consumer laptops, portable ultrasound workstations) without a dedicated GPU.
+The reference implementation is built in TensorFlow/Keras and was trained and
+evaluated on an Apple Mac mini with an M2 Pro (CPU/GPU).
+
+![U-Net architecture adapted for echocardiographic ROI segmentation.
+Key modifications from the original Ronneberger et al. (2015) design:
+same-padding (preserving spatial dimensions at each level), He-normal
+initialisation, dropout regularisation, and a binary sigmoid output.
+Feature map spatial dimensions are shown below each block; channel
+counts are shown above. Dashed boxes indicate dropout layers
+($p = 0.1$--$0.3$, increasing with depth).](figures/figure_2.pdf)
 
 ## Training Data
 
@@ -193,8 +226,16 @@ true near-field boundary is an arc. Linear-probe (rectangular) ultrasound
 layouts were not included in training.
 
 Annotations included all visible diagnostic content while excluding padding,
-borders, and overlay graphics. Only one frame per input video sequence was
-included for training.
+borders, and overlay graphics. Only one frame per video sequence was included
+for training; because the scan-sector boundary is static across frames within
+a cine loop, a single annotated frame is sufficient to learn the ROI geometry
+while maximising dataset diversity across acquisitions.
+
+All training frames were converted to grayscale, resized to 256×256 pixels
+using aspect-ratio-preserving padding (zero-padded borders) to avoid
+distorting spatial anatomy, and intensity-normalised to [0, 1]. This
+standardised input representation ensures consistency across datasets from
+different vendors and acquisition protocols.
 
 Training used a single 80/20 train--validation split created once at training
 start by randomly shuffling the full dataset with a fixed seed. The split was
@@ -236,8 +277,10 @@ on the validation split. During LabelMe annotation, frames were also reviewed to
 ensure that PHI was not present within the scan-sector ground-truth masks used
 for training.
 
-On a consumer Apple M2 Pro (CPU/GPU), inference takes approximately 25 ms per
-256x256 frame, enabling real-time preprocessing of short echo clips.
+On a consumer Apple Mac mini with an M2 Pro (CPU/GPU), Keras inference
+averages approximately 56 ms per 256x256 frame (measured over 50 runs;
+see `02_onnx_conversion.ipynb`), enabling near-real-time preprocessing of
+short echo clips on modest hardware.
 
 ![Sample predictions on held-out validation frames.](figures/prediction_samples.png)
 
