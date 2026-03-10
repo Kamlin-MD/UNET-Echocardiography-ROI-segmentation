@@ -53,11 +53,11 @@ Users can apply the reference model to new image collections, fine-tune on
 local annotations, evaluate image-mask pairs, and integrate the exported model
 into non-TensorFlow pipelines.
 
-![EchoROI processing pipeline showing a raw frame, predicted scan-sector mask,
-de-identified output, and optional ROI crop. The annotations highlight both
-successful removal of burned-in content outside the scan sector and a common
-limitation of sector-based masking: a partial ECG trace traversing the scan
-sector is retained.
+![EchoROI preprocessing workflow. (a) Raw frame, with examples of burned-in
+overlays targeted for removal highlighted in red; (b) predicted scan-sector
+mask; (c) de-identified output, where overlays outside the scan sector are
+removed but a partial ECG trace is retained where it traverses the scan
+sector; and (d) optional ROI crop.
 \label{fig:pipeline}](figures/figure_1.png)
 
 # Statement of Need
