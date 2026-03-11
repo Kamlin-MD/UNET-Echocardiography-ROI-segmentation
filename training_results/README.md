@@ -12,7 +12,7 @@ for the JOSS paper.
 | `prediction_samples.png` | Side-by-side predictions on held-out test images |
 | `metrics.json` | Final evaluation metrics (Dice, IoU, accuracy, etc.) |
 | `training_log.csv` | Per-epoch training metrics |
-| `dataset_summary.json` | Breakdown of training data by source |
+| `dataset_summary.json` | Training configuration and split summary |
 
 ## Reproducing
 

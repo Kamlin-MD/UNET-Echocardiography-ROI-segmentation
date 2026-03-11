@@ -1,5 +1,5 @@
 ---
-title: 'EchoROI: U-Net-based ROI Segmentation and De-identification for Echocardiography'
+title: 'EchoROI: Scan-sector Segmentation and De-identification for Echocardiography'
 tags:
   - Python
   - medical imaging
@@ -130,35 +130,32 @@ For most echocardiography clips, sector geometry remains fixed throughout the
 cine loop. EchoROI therefore predicts the mask from a single representative
 frame and applies the same mask and crop logic across the full sequence. By
 default, the representative frame is chosen from the first few frames using
-grayscale Shannon entropy, reducing compute cost and helping avoid blank or
-transition frames. EchoROI exposes the predicted binary mask as part of its
-outputs, so users can generate masked ROI images directly and adapt downstream
-code to retain complementary unmasked pixels when burned-in traces such as ECG
-are needed for temporal interpretation. The model is trained for sector
-segmentation only and does not attempt OCR or explicit extraction of overlay
-elements.
+grayscale Shannon entropy [@shannon1948], reducing compute cost and helping
+avoid blank or transition frames. EchoROI exposes the predicted binary mask
+directly, allowing users to generate masked ROI images and adapt downstream
+code if residual traces such as ECG are needed for temporal interpretation.
+The model performs sector segmentation only and does not attempt OCR or
+explicit overlay extraction.
 
-The reference model uses a lightly modified U-Net for binary scan-sector
-segmentation [@ronneberger2015unet]. The main design choices are
-$256 \times 256$ grayscale inputs, same-padding convolutions to preserve the
-echocardiographic sector geometry, and dropout regularisation
-[@srivastava2014dropout] to reduce overfitting on a comparatively small and
-heterogeneous annotation set. This is a pragmatic adaptation of a standard
-U-Net rather than a novel architecture, favouring robust segmentation and
-modest hardware requirements. The software is implemented in TensorFlow/Keras
-and can export trained models to ONNX for deployment outside TensorFlow.
+The reference model uses a standard U-Net [@ronneberger2015unet] for binary
+scan-sector segmentation, adapted to this application with $256 \times 256$
+grayscale inputs, same-padding convolutions to preserve sector geometry, and
+dropout regularisation [@srivastava2014dropout] to reduce overfitting on a
+small heterogeneous annotation set. The TensorFlow/Keras implementation
+prioritises robust segmentation and modest hardware requirements, and supports
+ONNX export for deployment outside TensorFlow.
 
-The pretrained model was developed on 1,355 manually annotated frame-mask pairs
-collected from multiple public and institutional sources, including
+The pretrained model was developed on 1,355 annotated frame-mask pairs from
+public and institutional echocardiography datasets, including
 MIMIC-IV-ECHO [@gow2023mimic], EchoNet-Dynamic [@ouyang2020echonet],
 EchoNet-Paediatric [@reddy2022echonetpeds], CACTUS [@elmekki2025cactus],
 EchoCP [@wang2021echocp], CardiacUDC [@yang2023graphecho], HMC-QU
-[@degerli2024hmcqu], and a small consented institutional set. Masks were
-annotated in LabelMe by outlining the visible scan sector while excluding
-padding, borders, and display graphics [@russell2008labelme-d8b]. Only one
-representative frame per cine sequence was used during training because the
-sector boundary is generally static within a clip and this maximised diversity
-across acquisitions.
+[@degerli2024hmcqu], and a small consented institutional set. Sector masks
+were created in LabelMe [@russell2008labelme-d8b] by outlining the visible
+scan sector while excluding padding and display graphics. One representative
+frame per cine loop was used because sector geometry is typically static
+within a clip; a per-source breakdown is provided in the repository
+documentation.
 
 # Research Impact Statement
 
@@ -176,11 +173,11 @@ annotated dataset, the reference model achieved:
 
 These figures come from the validation split used for model selection, so they
 should be interpreted as software validation rather than a definitive external
-benchmark. On a consumer Apple Mac mini with an M2 Pro, TensorFlow/Keras
-inference averaged approximately 56 ms per $256 \times 256$ frame, making the
-package practical for routine preprocessing of short clips on modest hardware.
+benchmark. The software is suitable for routine preprocessing workflows, and
+implementation-specific benchmarking examples are provided in the repository
+notebooks.
 
-The repository is intended for immediate reuse in echocardiography research
+The repository supports immediate reuse in echocardiography research
 workflows. It includes pretrained Keras and ONNX models, example notebooks,
 evaluation outputs, training logs, and tests, so users can reproduce the
 reported workflow or adapt it to site-specific data. Source code and artifacts
@@ -195,15 +192,14 @@ a preprocessing component for privacy-aware dataset preparation and
 standardised input generation in echocardiography research.
 
 EchoROI should nonetheless be used as a preprocessing aid rather than a
-guarantee of complete PHI removal. Still frames are more likely than moving
-cine clips to contain measurements or text annotations within the scan sector,
-some of which may contain PHI. By contrast, cine clips are typically saved
-without diagnostic-sector annotations; the more common residual failure mode is
-temporal overlays such as ECG or respiratory traces that cross the sector
-boundary and therefore cannot be removed by masking alone, as illustrated in
-\autoref{fig:pipeline}. These traces are unlikely to contain PHI, but human
-review and local governance procedures remain necessary before external data
-sharing.
+guarantee of complete PHI removal. Still frames are more likely than cine
+clips to contain measurements or text annotations within the scan sector, some
+of which may contain PHI. Cine clips are typically saved without in-sector
+annotations; the more common residual failure mode is temporal overlays such
+as ECG or respiratory traces crossing the sector boundary and therefore
+remaining after masking, as illustrated in \autoref{fig:pipeline}. These
+traces are unlikely to contain PHI, but human review and local governance
+procedures remain necessary before external data sharing.
 
 # AI Usage Disclosure
 
@@ -215,7 +211,8 @@ software and manuscript.
 # Acknowledgements
 
 This work was supported by the University of Stellenbosch Institute of
-Biomedical Engineering. The manual A4C segmentation effort described in
+Biomedical Engineering and in part by the National Research Foundation of
+South Africa (Grant Number: TTK240321210363). The manual A4C segmentation effort described in
 [@ekambaram2026mimicext] directly motivated the development of EchoROI. We
 gratefully acknowledge the providers of the datasets used for training and
 evaluation, including PhysioNet and Beth Israel Deaconess Medical Center for

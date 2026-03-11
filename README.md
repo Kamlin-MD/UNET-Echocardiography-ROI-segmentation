@@ -31,6 +31,47 @@ coefficient of 0.9880 on the held-out validation split.
 
 ---
 
+## Model Architecture
+
+EchoROI uses a standard U-Net adapted for scan-sector segmentation with
+256 × 256 grayscale input, same-padding convolutions to preserve sector
+geometry, and dropout regularisation to reduce overfitting on a small
+heterogeneous training set. Additional implementation details, intended use,
+and known limitations are summarised in [MODEL_CARD.md](MODEL_CARD.md).
+
+![Reference U-Net architecture used by EchoROI. The model follows a standard
+encoder-decoder U-Net layout with same-padding convolutions, dropout
+regularisation, and a single-channel sigmoid output for binary scan-sector
+segmentation.](paper/figures/figure_2.png)
+
+---
+
+## Training Data Summary
+
+The reference model was trained on 1,355 manually annotated echocardiographic
+frame-mask pairs drawn from public and institutional sources. Masks were
+created in LabelMe by outlining the visible scan sector while excluding
+padding, borders, and display graphics. Only one representative frame per cine
+loop was used for training because sector geometry is typically static within a
+clip.
+
+| Dataset | Frames | Access |
+|---|---:|---|
+| MIMIC-IV-ECHO | 403 | PhysioNet |
+| EchoNet-Dynamic | 145 | Stanford |
+| EchoNet-Paediatric | 263 | Stanford |
+| CACTUS (A4C subset) | 38 | Open access |
+| EchoCP | 60 | Kaggle |
+| Private dataset (consented) | 50 | Institutional |
+| CardiacUDC | 247 | Kaggle |
+| HMC-QU | 149 | By request |
+| **Total** | **1,355** | |
+
+The full citation list for these datasets is given in
+[paper/paper.md](paper/paper.md).
+
+---
+
 ## Quick Start
 
 ```bash
