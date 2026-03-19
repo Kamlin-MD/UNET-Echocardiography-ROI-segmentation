@@ -141,9 +141,16 @@ The reference model uses a standard U-Net [@ronneberger2015unet] for binary
 scan-sector segmentation, adapted to this application with $256 \times 256$
 grayscale inputs, same-padding convolutions to preserve sector geometry, and
 dropout regularisation [@srivastava2014dropout] to reduce overfitting on a
-small heterogeneous annotation set. The TensorFlow/Keras implementation
-prioritises robust segmentation and modest hardware requirements, and supports
-ONNX export for deployment outside TensorFlow.
+small heterogeneous annotation set. Training uses a composite loss that sums
+binary cross-entropy, Dice loss [@milletari2016vnet], and a total-variation
+(TV) regularisation term [@rudin1992tv]. The Dice component handles
+foreground/background class imbalance, while the TV term penalises
+high-frequency mask gradients and encourages the smooth, fan-shaped sector
+boundaries characteristic of phased-array ultrasound probes.  The
+train/validation split (80/20) is stratified by source dataset so that every
+contributing collection is proportionally represented.  The TensorFlow/Keras
+implementation prioritises robust segmentation and modest hardware
+requirements, and supports ONNX export for deployment outside TensorFlow.
 
 The pretrained model was developed on 1,355 annotated frame-mask pairs from
 public and institutional echocardiography datasets, including

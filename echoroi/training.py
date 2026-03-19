@@ -1,6 +1,7 @@
 """Training utilities for the EchoROI U-Net model."""
 
 import os
+from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,31 @@ from sklearn.model_selection import train_test_split
 
 from .model import UNetModel
 from .preprocessing import UltrasoundPreprocessor
+
+
+def dataset_label_from_filename(filename: str) -> str:
+    """Infer the source dataset from an image filename.
+
+    Used to build a stratification vector so that train/validation
+    splits contain proportional representation from every dataset.
+    """
+    name = os.path.basename(filename)
+    if name.startswith("0X1A"):
+        return "echonet_dynamic"
+    if name.startswith("0X1B") or name.startswith("CARD") or name.startswith("CR"):
+        return "echonet_peds"
+    if name.startswith("Site_"):
+        return "cardiac_udc"
+    if name.startswith("EchoCP"):
+        return "echocp"
+    if name.startswith("label_all_frame"):
+        return "hmc_qu"
+    if name.startswith("Temp_"):
+        return "private"
+    if "_D1" in name[:8] and "_frame" in name:
+        return "cactus"
+    # Remaining numeric-prefix files are MIMIC-IV-ECHO
+    return "mimic"
 
 
 class UNetTrainer:
@@ -44,6 +70,10 @@ class UNetTrainer:
     def prepare_data(self, image_dir: str, mask_dir: str) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Prepare training and validation data.
 
+        The split is stratified by source dataset (inferred from
+        filenames) so that the validation set contains proportional
+        representation from each contributing dataset.
+
         Args:
             image_dir: Directory containing training images
             mask_dir: Directory containing training masks
@@ -54,13 +84,25 @@ class UNetTrainer:
         print("Loading and preprocessing data...")
         X, Y = self.preprocessor.load_dataset(image_dir, mask_dir)
 
-        # Split data
+        # Build stratification labels from filenames
+        pairs = self.preprocessor.validate_data_paths(image_dir, mask_dir)
+        labels = [dataset_label_from_filename(img_path) for img_path, _ in pairs]
+
+        # Report per-dataset counts
+        from collections import Counter
+        counts = Counter(labels)
+        print("\\nDataset composition:")
+        for ds, n in sorted(counts.items(), key=lambda x: -x[1]):
+            print(f"  {ds:20s}: {n}")
+
+        # Stratified split
         X_train, X_val, Y_train, Y_val = train_test_split(
-            X, Y, test_size=self.validation_split, random_state=42, stratify=None
+            X, Y, test_size=self.validation_split, random_state=42,
+            stratify=labels,
         )
 
-        print("\\nData split:")
-        print(f"  Training: {X_train.shape[0]} samples")
+        print("\\nStratified data split:")
+        print(f"  Training:   {X_train.shape[0]} samples")
         print(f"  Validation: {X_val.shape[0]} samples")
 
         return X_train, X_val, Y_train, Y_val
@@ -78,14 +120,14 @@ class UNetTrainer:
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(
                 filepath=model_save_path,
-                monitor='val_dice_coefficient',
+                monitor='val_iou_score',
                 save_best_only=True,
                 save_weights_only=False,
                 mode='max',
                 verbose=1
             ),
             tf.keras.callbacks.EarlyStopping(
-                monitor='val_dice_coefficient',
+                monitor='val_iou_score',
                 patience=50,
                 verbose=1,
                 mode='max',
@@ -189,27 +231,27 @@ class UNetTrainer:
         axes[0, 1].legend()
         axes[0, 1].grid(True)
 
+        # Plot IoU (Jaccard) score — primary metric
+        iou_key = next((k for k in self.history.history
+                        if 'iou' in k and not k.startswith('val')), None)
+        if iou_key:
+            axes[1, 0].plot(self.history.history[iou_key], label='Training IoU')
+            axes[1, 0].plot(self.history.history[f'val_{iou_key}'], label='Validation IoU')
+            axes[1, 0].set_title('IoU (Jaccard Index)')
+            axes[1, 0].set_xlabel('Epoch')
+            axes[1, 0].set_ylabel('IoU Score')
+            axes[1, 0].legend()
+            axes[1, 0].grid(True)
+
         # Plot Dice coefficient
         dice_key = next((k for k in self.history.history
                          if 'dice' in k and not k.startswith('val')), None)
         if dice_key:
-            axes[1, 0].plot(self.history.history[dice_key], label='Training Dice')
-            axes[1, 0].plot(self.history.history[f'val_{dice_key}'], label='Validation Dice')
-            axes[1, 0].set_title('Dice Coefficient')
-            axes[1, 0].set_xlabel('Epoch')
-            axes[1, 0].set_ylabel('Dice Score')
-            axes[1, 0].legend()
-            axes[1, 0].grid(True)
-
-        # Plot IoU score
-        iou_key = next((k for k in self.history.history
-                        if 'iou' in k and not k.startswith('val')), None)
-        if iou_key:
-            axes[1, 1].plot(self.history.history[iou_key], label='Training IoU')
-            axes[1, 1].plot(self.history.history[f'val_{iou_key}'], label='Validation IoU')
-            axes[1, 1].set_title('IoU Score')
+            axes[1, 1].plot(self.history.history[dice_key], label='Training Dice')
+            axes[1, 1].plot(self.history.history[f'val_{dice_key}'], label='Validation Dice')
+            axes[1, 1].set_title('Dice Coefficient')
             axes[1, 1].set_xlabel('Epoch')
-            axes[1, 1].set_ylabel('IoU Score')
+            axes[1, 1].set_ylabel('Dice Score')
             axes[1, 1].legend()
             axes[1, 1].grid(True)
 

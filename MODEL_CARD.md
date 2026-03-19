@@ -98,7 +98,7 @@ sequence was included.
 |:----------|:------|
 | Optimiser | Adam |
 | Learning rate | 1×10⁻⁴ (reduce-on-plateau: factor 0.5, patience 5) |
-| Loss | Binary cross-entropy |
+| Loss | Composite: BCE + Dice + Total Variation (TV) |
 | Batch size | 16 |
 | Epochs | 50 |
 | Hardware | Apple Mac mini, M2 Pro (CPU/GPU) |

@@ -44,6 +44,26 @@ encoder-decoder U-Net layout with same-padding convolutions, dropout
 regularisation, and a single-channel sigmoid output for binary scan-sector
 segmentation.](paper/figures/figure_2.png)
 
+### Loss Function
+
+The model is trained with a **composite BCE + Dice + Total Variation loss**:
+
+$$\mathcal{L} = w_\text{bce}\,\text{BCE} + w_\text{dice}\,\text{DiceLoss} + \alpha_\text{tv}\,\text{TV}(\hat{y})$$
+
+| Term | Purpose | Weight |
+|---|---|---|
+| **BCE** | Stable per-pixel classification gradient | 1.0 |
+| **Dice** | Region-overlap optimisation; robust to class imbalance | 1.0 |
+| **Total Variation** | Penalises high-frequency mask edges → smooth sector boundaries | 1 × 10⁻⁴ |
+
+The **TV regulariser** is the key ingredient for producing the smooth,
+fan-shaped sector boundaries typical of ultrasound probes. BCE alone can
+produce noisy boundaries; adding a region-based loss (Dice/Jaccard) improves
+overlap but does not explicitly enforce spatial smoothness. The TV term fills
+this gap by penalising large pixel-to-pixel differences in the predicted mask,
+yielding clean, continuous boundaries even on a small heterogeneous training
+set. Implementation: [`echoroi/model.py`](echoroi/model.py).
+
 ---
 
 ## Training Data Summary
