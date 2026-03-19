@@ -34,6 +34,49 @@ def iou_score(y_true, y_pred, smooth=1e-6):
     return (intersection + smooth) / (union + smooth)
 
 
+# ── Composite loss: BCE + Dice + Total Variation ──────────────────────
+# The combination addresses three complementary objectives:
+#   BCE  – stable per-pixel gradient signal
+#   Dice – region-overlap optimisation, robust to class imbalance
+#   TV   – penalises high-frequency mask edges, encouraging the smooth
+#          fan-shaped sector boundaries typical of ultrasound probes
+
+def _dice_loss(y_true, y_pred, smooth=1e-6):
+    """1 − Dice: differentiable region-overlap loss."""
+    intersection = tf.reduce_sum(y_true * y_pred)
+    union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
+    return 1.0 - (2.0 * intersection + smooth) / (union + smooth)
+
+
+def _total_variation_loss(y_pred):
+    """Encourage smooth, continuous masks by penalising jagged edges."""
+    dx = tf.abs(y_pred[:, 1:, :, :] - y_pred[:, :-1, :, :])
+    dy = tf.abs(y_pred[:, :, 1:, :] - y_pred[:, :, :-1, :])
+    return tf.reduce_mean(dx) + tf.reduce_mean(dy)
+
+
+@_register(package="echoroi")
+def bce_dice_tv_loss(y_true, y_pred,
+                    w_bce=1.0, w_dice=1.0, alpha_tv=1e-4):
+    """Composite loss combining BCE, Dice, and Total-Variation terms.
+
+    .. math::
+
+        \\mathcal{L} = w_{bce}\\,\\mathrm{BCE}
+                     + w_{dice}\\,\\mathrm{DiceLoss}
+                     + \\alpha_{tv}\\,\\mathrm{TV}(\\hat{y})
+
+    The TV regulariser is the key ingredient for producing the smooth,
+    fan-shaped sector boundaries characteristic of echocardiographic
+    ultrasound, while the Dice term handles foreground/background class
+    imbalance.
+    """
+    bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+    dsc = _dice_loss(y_true, y_pred)
+    tv = _total_variation_loss(y_pred)
+    return w_bce * bce + w_dice * dsc + alpha_tv * tv
+
+
 class UNetModel:
     """U-Net model class for ultrasound ROI segmentation."""
 
@@ -115,6 +158,10 @@ class UNetModel:
     def compile_model(self, learning_rate: float = 1e-4) -> tf.keras.Model:
         """Compile the model with optimizer, loss, and metrics.
 
+        Uses a composite BCE + Dice + Total-Variation loss
+        (``bce_dice_tv_loss``) that balances per-pixel accuracy,
+        region overlap, and boundary smoothness.
+
         Args:
             learning_rate: Learning rate for Adam optimizer
 
@@ -126,7 +173,7 @@ class UNetModel:
 
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-            loss='binary_crossentropy',
+            loss=bce_dice_tv_loss,
             metrics=['accuracy', dice_coefficient, iou_score]
         )
         return self.model
@@ -173,6 +220,7 @@ def load_pretrained_model(model_path: str, compile: bool = False) -> tf.keras.Mo
     custom_objects = {
         "dice_coefficient": dice_coefficient,
         "iou_score": iou_score,
+        "bce_dice_tv_loss": bce_dice_tv_loss,
     }
     return tf.keras.models.load_model(
         model_path, custom_objects=custom_objects, compile=compile,

@@ -11,15 +11,17 @@ __author__ = "Kamlin Ekambaram"
 __email__ = "kamlin.ekambaram@gmail.com"
 
 from .inference import UNetPredictor
-from .model import UNetModel, dice_coefficient, iou_score
+from .model import UNetModel, bce_dice_tv_loss, dice_coefficient, iou_score
 from .preprocessing import UltrasoundPreprocessor
-from .training import UNetTrainer
+from .training import UNetTrainer, dataset_label_from_filename
 
 __all__ = [
     "UNetModel",
     "UltrasoundPreprocessor",
     "UNetTrainer",
     "UNetPredictor",
+    "bce_dice_tv_loss",
     "dice_coefficient",
+    "dataset_label_from_filename",
     "iou_score",
 ]
