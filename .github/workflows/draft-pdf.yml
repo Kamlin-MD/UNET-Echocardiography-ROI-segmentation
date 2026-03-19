@@ -16,7 +16,7 @@ jobs:
     name: JOSS Paper Draft
     steps:
       - uses: actions/checkout@v4
-      - uses: openjournals/openjournals-draft-action@v1
+      - uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
           paper-path: paper/paper.md
