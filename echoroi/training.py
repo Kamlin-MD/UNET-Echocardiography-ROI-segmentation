@@ -1,7 +1,6 @@
 """Training utilities for the EchoROI U-Net model."""
 
 import os
-from glob import glob
 
 import matplotlib.pyplot as plt
 import numpy as np
