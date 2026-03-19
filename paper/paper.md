@@ -15,17 +15,20 @@ authors:
     affiliation: 1
     corresponding: true
   - name: Anurag Arnab
-  - name: Philip Herbst
     affiliation: 2
-  - name: Rensu Theart
+  - name: Philip Herbst
     affiliation: 3
+  - name: Rensu Theart
+    affiliation: 4
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: University of Stellenbosch, Division of Cardiology, South Africa
+  - name: Independent Researcher
     index: 2
-  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+  - name: University of Stellenbosch, Division of Cardiology, South Africa
     index: 3
+  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+    index: 4
 date: 10 March 2026
 bibliography: paper.bib
 ---
