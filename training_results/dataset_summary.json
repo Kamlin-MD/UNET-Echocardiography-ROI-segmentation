@@ -1,7 +1,7 @@
 {
-  "total_samples": 1355,
-  "training_samples": 1084,
-  "validation_samples": 271,
+  "total_samples": 1206,
+  "training_samples": 964,
+  "validation_samples": 242,
   "image_size": [
     256,
     256
@@ -11,7 +11,7 @@
   "batch_size": 16,
   "learning_rate": 0.0001,
   "validation_split": 0.2,
-  "best_val_loss": 0.029602259397506714,
-  "best_val_dice": 0.9853867888450623,
-  "best_val_iou": 0.9712119102478027
+  "best_val_loss": 0.04412487894296646,
+  "best_val_dice": 0.9872645139694214,
+  "best_val_iou": 0.9748716354370117
 }

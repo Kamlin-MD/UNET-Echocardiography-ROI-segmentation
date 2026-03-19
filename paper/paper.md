@@ -15,20 +15,17 @@ authors:
     affiliation: 1
     corresponding: true
   - name: Anurag Arnab
-    affiliation: 2
   - name: Philip Herbst
-    affiliation: 3
+    affiliation: 2
   - name: Rensu Theart
-    affiliation: 4
+    affiliation: 3
 affiliations:
   - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
     index: 1
-  - name: Google DeepMind, United Kingdom
-    index: 2
   - name: University of Stellenbosch, Division of Cardiology, South Africa
-    index: 3
+    index: 2
   - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
-    index: 4
+    index: 3
 date: 10 March 2026
 bibliography: paper.bib
 ---
@@ -172,11 +169,11 @@ annotated dataset, the reference model achieved:
 
 | Metric           | Value  |
 |:-----------------|-------:|
-| Dice coefficient | 0.9880 |
-| IoU              | 0.9763 |
-| Pixel accuracy   | 0.9906 |
-| Sensitivity      | 0.9894 |
-| Specificity      | 0.9914 |
+| Dice coefficient | 0.9884 |
+| IoU              | 0.9770 |
+| Pixel accuracy   | 0.9907 |
+| Sensitivity      | 0.9891 |
+| Specificity      | 0.9918 |
 
 These figures come from the validation split used for model selection, so they
 should be interpreted as software validation rather than a definitive external
