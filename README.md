@@ -13,7 +13,7 @@ so that downstream models receive only clinically relevant pixels.
 
 Trained on 1,355 annotated echocardiographic frames spanning four-chamber,
 parasternal, and subcostal views across eight datasets, achieving a Dice
-coefficient of 0.9880 on the held-out validation split.
+coefficient of 0.9884 on the held-out validation split.
 
 > **Paper:** see [`paper/paper.md`](paper/paper.md) for the full manuscript.
 
@@ -27,7 +27,7 @@ coefficient of 0.9880 on the held-out validation split.
 | **Input** | 256 × 256 × 1 grayscale (aspect-ratio preserving, zero-padded) |
 | **Output** | 256 × 256 × 1 binary mask (sigmoid, threshold 0.5) |
 | **Formats** | Keras (`.keras`, 373 MB) and ONNX (`.onnx`, 124 MB) |
-| **Performance** | Mean Dice 0.9880 on held-out validation set |
+| **Performance** | Mean Dice 0.9884 on held-out validation set |
 | **ONNX Runtime** | Cross-platform inference — no TensorFlow dependency |
 
 ---

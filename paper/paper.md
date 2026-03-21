@@ -25,7 +25,7 @@ affiliations:
     index: 1
   - name: Independent Researcher
     index: 2
-  - name: Division of Cardiology, Department of Medicine, Faculty of Medicine and Health Sciences, Stellenbosch University and Tygerberg Hospital, Cape Town, South
+  - name: Division of Cardiology, Department of Medicine, Faculty of Medicine and Health Sciences, Stellenbosch University and Tygerberg Hospital, Cape Town, South Africa
     index: 3
   - name: Department of Electrical Engineering, Faculty of Engineering, Stellenbosch University, South Africa
     index: 4
