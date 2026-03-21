@@ -21,16 +21,18 @@ authors:
   - name: Rensu Theart
     affiliation: 4
 affiliations:
-  - name: University of Stellenbosch, Institute of Biomedical Engineering, South Africa
+  - name: Institute for Biomedical Engineering, Faculty of Engineering, Stellenbosch University, South Africa
     index: 1
   - name: Independent Researcher
     index: 2
-  - name: University of Stellenbosch, Division of Cardiology, South Africa
+  - name: Division of Cardiology, Department of Medicine, Faculty of Medicine and Health Sciences, Stellenbosch University and Tygerberg Hospital, Cape Town, South
     index: 3
-  - name: University of Stellenbosch, Department of Electrical Engineering, South Africa
+  - name: Department of Electrical Engineering, Faculty of Engineering, Stellenbosch University, South Africa
     index: 4
 date: 10 March 2026
 bibliography: paper.bib
+header-includes:
+  - \usepackage{graphicx}
 ---
 
 # Summary
@@ -44,21 +46,34 @@ and masks non-diagnostic image content using a U-Net-based model
 [@ronneberger2015unet]. The resulting outputs preserve the native scan-sector
 geometry while removing surrounding display content, enabling preprocessing for
 machine learning, privacy-aware sharing of teaching examples, and more
-consistent inputs for downstream analysis.
+consistent inputs for downstream analysis. The pretrained model targets the
+fan-shaped scan sector produced by phased-array cardiac probes and may
+generalise to similar curvilinear sector geometries, but is unlikely to
+segment the rectangular field of view of linear-array probes without
+fine-tuning or retraining on appropriate annotations.
 
-`EchoROI` is distributed as an installable package with a command-line
-interface and a Python API. The repository includes pretrained weights,
-training and evaluation workflows, ONNX export utilities, notebooks, and tests.
+`EchoROI` is distributed as an installable package via
+[PyPI](https://pypi.org/project/echoroi/) (`pip install echoroi`) and provides
+a command-line interface and a Python API. The repository includes pretrained
+weights, training and evaluation workflows, ONNX export utilities, notebooks,
+and tests.
 Users can apply the reference model to new image collections, fine-tune on
 local annotations, evaluate image-mask pairs, and integrate the exported model
 into non-TensorFlow pipelines.
 
-![EchoROI preprocessing workflow. (a) Raw frame, with examples of burned-in
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.48\textwidth]{figures/figure_1a.png}\hfill
+\includegraphics[width=0.48\textwidth]{figures/figure_1b.png}\\[0.5em]
+\includegraphics[width=0.48\textwidth]{figures/figure_1c.png}\hfill
+\includegraphics[width=0.48\textwidth]{figures/figure_1d.png}
+\caption{\texttt{EchoROI} preprocessing workflow. (a) Raw frame, with examples of burned-in
 overlays targeted for removal highlighted in red; (b) predicted scan-sector
 mask; (c) de-identified output, where overlays outside the scan sector are
-removed but a partial ECG trace is retained where it traverses the scan
-sector; and (d) optional ROI crop.
-\label{fig:pipeline}](figures/figure_1.png)
+removed but a partial ECG trace and partial scale bar are retained where they
+traverse the scan sector; and (d) ROI crop.}
+\label{fig:pipeline}
+\end{figure}
 
 # Statement of Need
 
@@ -74,10 +89,11 @@ apical four-chamber studies from MIMIC-IV-ECHO using LabelMe
 [@ekambaram2026mimicext; @russell2008labelme-d8b], which motivated the
 development of a reusable automated workflow.
 
-EchoROI was developed for researchers who need a scriptable and adaptable way
+`EchoROI` was developed for researchers who need a scriptable and adaptable way
 to standardise echocardiography inputs across heterogeneous sources. Rather
-than relying on fixed crop templates, it learns the sector boundary directly
-and uses the predicted mask to remove non-diagnostic content outside the scan
+than relying on fixed crop templates, the provided pretrained model has learnt
+the sector boundary directly and uses the predicted mask to remove
+non-diagnostic content outside the scan
 sector. This is useful for privacy-preserving preprocessing, multi-source
 dataset harmonisation, and workflows where background overlays would otherwise
 consume model capacity or bias evaluation. The package targets users preparing
@@ -88,7 +104,7 @@ or sites.
 # State of the Field
 
 Existing approaches address related needs but not the full workflow targeted by
-EchoROI. OCR-based de-identification pipelines remove text from ultrasound
+`EchoROI`. OCR-based de-identification pipelines remove text from ultrasound
 files but do not explicitly recover the scan sector and may struggle with
 graphical overlays or variable vendor layouts [@monteiro2017deid]. Heuristic
 cleaning tools such as `PyLogik` can work well on stable layouts, but
@@ -102,7 +118,7 @@ datasets such as EchoNet-Dynamic also distribute pre-cropped videos
 [@ouyang2020echonet], which simplifies downstream modelling but removes the
 original scan-sector geometry and assumes consistent cropping upstream.
 
-EchoROI therefore occupies a distinct niche as reusable research software for
+`EchoROI` therefore occupies a distinct niche as reusable research software for
 learned scan-sector segmentation in heterogeneous echocardiography data. Its
 main contribution is not a new segmentation architecture, but a packaged
 workflow that combines pretrained inference, fine-tuning, evaluation, and
@@ -111,12 +127,15 @@ de-identification.
 
 # Software Design
 
-EchoROI is packaged as a modular Python library with components for
+`EchoROI` is packaged as a modular Python library with components for
 preprocessing, model definition, training, inference, evaluation, and export.
 The command-line interface exposes the main workflows for prediction,
 fine-tuning, evaluation, and benchmarking, while the Python API supports
-integration into larger research pipelines. A typical de-identification
-workflow is:
+integration into larger research pipelines. The core operation is mask
+prediction: the model segments the scan sector and outputs a binary mask for
+each input. When the optional `--deidentify` flag is set, the predicted mask
+is applied to zero out all pixels outside the scan sector, producing a
+de-identified output in a single step. A typical workflow is:
 
 ```bash
 echoroi predict \
@@ -127,13 +146,14 @@ echoroi predict \
 ```
 
 For most echocardiography clips, sector geometry remains fixed throughout the
-cine loop. EchoROI therefore predicts the mask from a single representative
+cine loop. `EchoROI` therefore predicts the mask from a single representative
 frame and applies the same mask and crop logic across the full sequence. By
 default, the representative frame is chosen from the first few frames using
 grayscale Shannon entropy [@shannon1948], reducing compute cost and helping
-avoid blank or transition frames. EchoROI exposes the predicted binary mask
-directly, allowing users to generate masked ROI images and adapt downstream
-code if residual traces such as ECG are needed for temporal interpretation.
+avoid blank or transition frames. Without `--deidentify`, only the predicted
+binary mask is saved, allowing users to apply it in custom downstream
+workflows or inspect residual traces such as ECG that may cross the sector
+boundary.
 The model performs sector segmentation only and does not attempt OCR or
 explicit overlay extraction.
 
@@ -166,7 +186,7 @@ documentation.
 
 # Research Impact Statement
 
-EchoROI provides directly reproducible evidence that the software works as
+`EchoROI` provides directly reproducible evidence that the software works as
 intended on heterogeneous echocardiography data. On the validation split of the
 annotated dataset, the reference model achieved:
 
@@ -192,21 +212,23 @@ are available at
 [https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation).
 The included evaluation command and DICOM-to-NPZ notebook support end-to-end
 preprocessing pipelines in which clips are loaded, optionally resampled,
-masked using EchoROI, cropped using the predicted sector geometry, and saved
+masked using `EchoROI`, cropped using the predicted sector geometry, and saved
 for downstream modelling. This combination of usable software, pretrained
-artifacts, and reproducible examples gives EchoROI credible near-term impact as
+artifacts, and reproducible examples gives `EchoROI` credible near-term impact as
 a preprocessing component for privacy-aware dataset preparation and
 standardised input generation in echocardiography research.
 
-EchoROI should nonetheless be used as a preprocessing aid rather than a
-guarantee of complete PHI removal. Still frames are more likely than cine
-clips to contain measurements or text annotations within the scan sector, some
-of which may contain PHI. Cine clips are typically saved without in-sector
-annotations; the more common residual failure mode is temporal overlays such
-as ECG or respiratory traces crossing the sector boundary and therefore
-remaining after masking, as illustrated in \autoref{fig:pipeline}. These
-traces are unlikely to contain PHI, but human review and local governance
-procedures remain necessary before external data sharing.
+`EchoROI` should nonetheless be used as a preprocessing aid rather than a
+guarantee of complete PHI removal. On still frames, clinicians may place
+measurement callipers, annotations, or text labels at arbitrary positions
+within the scan sector; because this placement is user-dependent, such
+overlays can include patient identifiers or clinical notes that the sector
+mask cannot remove. Cine clips are typically saved without user-placed
+in-sector annotations, but machine-generated temporal overlays — such as ECG
+or respiratory traces — may traverse the sector boundary and therefore remain
+after masking, as illustrated in \autoref{fig:pipeline}. These traces are
+unlikely to contain PHI, but human review and local governance procedures
+remain necessary before external data sharing.
 
 # AI Usage Disclosure
 
@@ -220,14 +242,14 @@ software and manuscript.
 This work was supported by the University of Stellenbosch Institute of
 Biomedical Engineering and in part by the National Research Foundation of
 South Africa (Grant Number: TTK240321210363). The manual A4C segmentation effort described in
-[@ekambaram2026mimicext] directly motivated the development of EchoROI. We
+[@ekambaram2026mimicext] directly motivated the development of `EchoROI`. We
 gratefully acknowledge the providers of the datasets used for training and
 evaluation, including PhysioNet and Beth Israel Deaconess Medical Center for
 MIMIC-IV-ECHO [@gow2023mimic; @goldberger2000physionet], the Stanford AIMI
 Center for EchoNet-Dynamic [@ouyang2020echonet] and EchoNet-Paediatric
 [@reddy2022echonetpeds], and the authors of CACTUS [@elmekki2025cactus],
 EchoCP [@wang2021echocp], CardiacUDC [@yang2023graphecho], and HMC-QU
-[@degerli2024hmcqu]. EchoROI is built on TensorFlow/Keras, OpenCV, and the
+[@degerli2024hmcqu]. `EchoROI` is built on TensorFlow/Keras, OpenCV, and the
 Python scientific computing ecosystem.
 
 # References

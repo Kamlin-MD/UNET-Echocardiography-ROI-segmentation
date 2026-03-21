@@ -1,5 +1,6 @@
 # EchoROI — U-Net ROI Segmentation for Echocardiography
 
+[![PyPI version](https://img.shields.io/pypi/v/echoroi.svg)](https://pypi.org/project/echoroi/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![TensorFlow 2.x](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)](https://www.tensorflow.org/)
@@ -14,7 +15,7 @@ Trained on 1,355 annotated echocardiographic frames spanning four-chamber,
 parasternal, and subcostal views across eight datasets, achieving a Dice
 coefficient of 0.9880 on the held-out validation split.
 
-> **Paper:** see [`paper/paper.md`](paper/paper.md) for the full JOSS-style manuscript.
+> **Paper:** see [`paper/paper.md`](paper/paper.md) for the full manuscript.
 
 ---
 
@@ -94,14 +95,29 @@ The full citation list for these datasets is given in
 
 ## Quick Start
 
+### Install from PyPI
+
 ```bash
-# Clone
+pip install echoroi
+```
+
+> **Note:** The PyPI package installs the `echoroi` library and CLI but does
+> not include model weights (they exceed PyPI size limits). Download the
+> pretrained Keras and/or ONNX weights from the
+> [GitHub repository `models/` directory](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation/tree/main/models)
+> or clone the repository (see below).
+
+### Or install from source (for development)
+
+```bash
 git clone https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation.git
 cd UNET-Echocardiography-ROI-segmentation
-
-# Install
 pip install -e ".[dev]"
+```
 
+### Run inference
+
+```bash
 # Run inference on a single image
 python -c "
 from echoroi import UNetPredictor
@@ -230,8 +246,8 @@ If you use EchoROI in your research, please cite:
 
 ```bibtex
 @article{ekambaram2026echoroi,
-  title   = {{EchoROI}: A {U-Net}-based Python Tool for Echocardiographic
-             {ROI} Segmentation and De-identification},
+  title   = {{EchoROI}: Scan-sector Segmentation and De-identification
+             for Echocardiography},
   author  = {Ekambaram, Kamlin and Arnab, Anurag and Herbst, Philip and
              Theart, Rensu},
   journal = {Journal of Open Source Software},
