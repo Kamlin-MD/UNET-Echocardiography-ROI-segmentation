@@ -1,0 +1,21 @@
+include LICENSE
+include README.md
+include CITATION.cff
+include MODEL_CARD.md
+recursive-include echoroi *.py
+
+exclude Makefile
+exclude tox.ini
+
+prune models
+prune data
+prune preprocessed_data
+prune UNET_training_dataset
+prune notebooks
+prune paper
+prune evaluation_results
+prune training_results
+prune results
+prune scripts
+prune docs
+prune .github

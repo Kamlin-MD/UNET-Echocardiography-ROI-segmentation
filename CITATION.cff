@@ -11,7 +11,7 @@ authors:
   given-names: "Philip"
 - family-names: "Theart"
   given-names: "Rensu"
-title: "EchoROI: A U-Net-based Python Tool for Echocardiographic ROI Segmentation and De-identification"
+title: "EchoROI: Scan-sector Segmentation and De-identification for Echocardiography"
 version: 0.1.0
 date-released: 2026-02-21
 url: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
