@@ -158,18 +158,21 @@ may degrade:
 
 ## Citation
 
-If you use EchoROI in your research, please cite:
+If you use EchoROI in your work, please cite the software repository and the version you used:
 
 ```bibtex
-@article{ekambaram2026echoroi,
-  title   = {{EchoROI}: A {U-Net}-based Python Tool for Echocardiographic
-             {ROI} Segmentation and De-identification},
-  author  = {Ekambaram, Kamlin and Arnab, Anurag and Herbst, Philip and
-             Theart, Rensu},
-  journal = {Journal of Open Source Software},
-  year    = {2026}
+@software{ekambaram2026echoroi,
+  author    = {Ekambaram, Kamlin and Arnab, Anurag and Herbst, Philip and
+               Theart, Rensu},
+  title     = {{EchoROI}: Scan-sector Segmentation and De-identification
+               for Echocardiography},
+  version   = {0.1.0},
+  url       = {https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation},
+  year      = {2026}
 }
 ```
+
+See [CITATION.cff](CITATION.cff) for machine-readable citation metadata.
 
 ## Contact
 

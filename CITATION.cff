@@ -1,5 +1,6 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+type: software
+message: "If you use this software, please cite the repository and version below."
 authors:
 - family-names: "Ekambaram"
   given-names: "Kamlin"
