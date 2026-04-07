@@ -47,7 +47,7 @@ for any new functionality.
 - **`tests/`** — pytest test suite.
 - **`scripts/`** — Utility scripts (not part of the package).
 - **`notebooks/`** — Jupyter notebooks for exploration.
-- **`paper/`** — JOSS manuscript source.
+- **`paper/`** — Manuscript source (under development).
 
 ## Submitting Changes
 

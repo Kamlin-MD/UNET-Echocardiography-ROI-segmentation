@@ -1,8 +1,8 @@
 # Training Results
 
 This directory contains the training metrics and visualisations for the
-EchoROI U-Net model. These are committed to the repository as evidence
-for the JOSS paper.
+EchoROI U-Net model. These are committed to the repository for
+reproducibility and transparency.
 
 ## Contents (populated after training)
 
