@@ -46,30 +46,32 @@ UNET_training_dataset/
 preprocessed_data/
 test_data/
 epoch_overlays/
+/local/
+/authorised/
 
 # Inference / evaluation outputs (user-generated, not committed)
 results/
 evaluation_results/
 
-# Empty placeholder dirs
-docs/
-
 # Model weights – large intermediate checkpoints stay ignored
+*.keras
+*.onnx
 models/*.h5
 models/*.pb
 models/*.csv
 models/*SavedModel/
 models/tflite/
-# The final trained .keras and .onnx weights ARE committed
-# models/*.keras  ← NOT ignored
-# models/*.onnx   ← NOT ignored
+# Annotation packages require a per-source distribution review before tracking.
+annotations/*
+!annotations/README.md
+!annotations/manifest.example.csv
 
 # ---------- Outputs ----------
 results/
 outputs/
 predictions/
 *_output/
-# Note: training_results/ is NOT ignored – it is committed for the paper
+# Aggregate reference-run records are retained for transparency.
 !training_results/
 processed_frames/
 *.avi

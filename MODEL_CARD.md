@@ -10,12 +10,24 @@
 | **Input** | 256×256×1 grayscale image (float32, pixel values in [0, 1]) |
 | **Output** | 256×256×1 binary mask (sigmoid activation) |
 | **Framework** | TensorFlow/Keras 2.x; ONNX export also provided |
-| **License** | MIT |
+| **License** | MIT for released software; no checkpoint licence granted by this release |
 | **Version** | 1.0 |
 | **Release date** | March 2026 |
 | **Repository** | [github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation) |
 
 ## Intended Use
+
+### Checkpoint availability
+
+This card describes the authors' evaluated reference model, not a checkpoint
+supplied by the public release. The release supplies software with Keras/ONNX
+support and aggregate run records, not pretrained weights or source datasets.
+
+Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+
+See [annotation access](docs/ANNOTATION_ACCESS.md) and
+[retraining](docs/RETRAINING.md). Access to a source dataset does not guarantee
+access to the authors' annotations or the private institutional subset.
 
 ### Primary use cases
 
@@ -26,14 +38,14 @@
 2. **De-identification aid** — Black out regions outside the scan sector to
    reduce the risk of exposing protected health information burned into the
    pixel data. **This is not a guarantee of complete PHI removal.**
-3. **Education** — Generate de-identified stills or clips for teaching,
+3. **Education** — Generate sector-masked stills or clips for teaching,
    FOAMed, and collaboration, subject to institutional governance.
 
 ### Intended users
 
 - Medical imaging researchers preprocessing echocardiography datasets.
 - Machine learning practitioners building cardiac analysis pipelines.
-- Clinical educators sharing de-identified echo examples.
+- Clinical educators preparing echo examples for review before sharing.
 
 ### Out-of-scope uses
 
@@ -47,8 +59,11 @@
 
 ## Training Data
 
-The model was trained on 1,355 manually annotated echocardiogram frame/mask
-pairs (80/20 train/validation split, fixed random seed) drawn from:
+The documented annotation collection contains 1,355 frame/mask pairs drawn
+from the sources below. This is a collection inventory, not the saved run's
+training membership: `training_results/dataset_summary.json` records 1,206
+loaded pairs, split into 964 training and 242 validation samples. No saved
+per-file split manifest explains the difference.
 
 | Dataset | Frames | Access |
 |:--------|-------:|:-------|
@@ -82,7 +97,14 @@ sequence was included.
 
 ## Performance
 
-### Validation split metrics (20% of 1,355 frames)
+### Previously reported validation metrics
+
+The following original model-card values are retained for transparency. They
+match the rounded historical `training_results/metrics.json` at `5e10245`
+(21 February 2026), whose summary records 1,206 pairs, batch size 16,
+and 964 training / 242 validation samples. That source selected checkpoints
+by validation Dice. They are not the current March IoU-selected run's metrics.
+Neither run has a released per-file split or evaluation-checkpoint hash.
 
 | Metric | Value |
 |:-------|------:|
@@ -92,7 +114,14 @@ sequence was included.
 | Sensitivity | 0.9894 |
 | Specificity | 0.9914 |
 
-### Training configuration
+The saved reference-run evaluation instead reports Dice **0.9883648526**,
+IoU **0.9769973445**, accuracy **0.9907418243**, sensitivity **0.9891411356**,
+and specificity **0.9917980637**. These are thresholded, pooled-pixel
+evaluation metrics, not the soft batch metrics in the training log.
+See the [run-record reconciliation](training_results/README.md) for evidence
+and remaining provenance limitations; neither table is an external test result.
+
+### Saved March reference-run configuration
 
 | Parameter | Value |
 |:----------|:------|
@@ -107,8 +136,12 @@ sequence was included.
 ### Caveats
 
 - No separate held-out test set was used. Validation metrics are from the same
-  split used for model selection (best `val_dice_coefficient` checkpoint) and
+  split used for model selection (the saved-run source selects the best
+  `val_iou_score` checkpoint, not `val_dice_coefficient`) and
   may modestly overestimate generalisation performance.
+- Batch size 16 is recorded for the saved run; batch size 8 is a CLI/Makefile
+  default, not that run's configuration. Exact checkpoint reproduction is not
+  established by the released records.
 - Performance was not stratified by dataset source, vendor, or view type.
 
 ## Known Failure Modes
@@ -150,7 +183,9 @@ may degrade:
   information. Users are responsible for compliance with local data governance
   regulations (e.g., HIPAA, POPIA, GDPR).
 - De-identification via ROI masking is a risk-reduction measure, not a
-  guarantee. Human review is required before sharing derived data externally.
+  guarantee. Identifiers and overlays inside the predicted ROI may remain,
+  and sector masking does not itself de-identify DICOM metadata. Human
+  review is required before sharing derived data externally.
 - The training data spans multiple institutions but is not demographically
   balanced or stratified. Performance disparities across patient populations,
   device manufacturers, or clinical settings have not been characterised.

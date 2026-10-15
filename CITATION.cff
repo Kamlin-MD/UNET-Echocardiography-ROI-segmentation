@@ -1,28 +1,50 @@
 cff-version: 1.2.0
 type: software
-message: "If you use this software, please cite the repository and version below."
+message: "If you use this software, please cite the specific version used. When available, use the version-specific DOI from the Zenodo software record."
 authors:
 - family-names: "Ekambaram"
   given-names: "Kamlin"
   orcid: "https://orcid.org/0000-0002-1366-8451"
   email: "kamlin.ekambaram@gmail.com"
+  affiliation: "Institute for Biomedical Engineering, Faculty of Engineering, Stellenbosch University, South Africa"
 - family-names: "Arnab"
   given-names: "Anurag"
+  affiliation: "Independent Researcher"
 - family-names: "Herbst"
   given-names: "Philip"
+  affiliation: "Division of Cardiology, Department of Medicine, Faculty of Medicine and Health Sciences, Stellenbosch University and Tygerberg Hospital, Cape Town, South Africa"
 - family-names: "Theart"
   given-names: "Rensu"
+  affiliation: "Department of Electrical Engineering, Faculty of Engineering, Stellenbosch University, South Africa"
 title: "EchoROI: Scan-sector Segmentation and De-identification for Echocardiography"
 version: 0.1.0
 date-released: 2026-02-21
 url: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
 repository-code: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
-abstract: "A Python package for automated region of interest (ROI) segmentation in echocardiogram images using a U-Net deep-learning model, with applications in medical data de-identification."
+abstract: >-
+  EchoROI is a research Python package for U-Net-based scan-sector segmentation
+  and masking in echocardiography images. It provides a command-line interface,
+  a Python API, training and evaluation workflows, and Keras and ONNX model
+  support. Masking pixels outside the predicted scan sector aids preprocessing
+  and de-identification, but identifiers and overlays inside the sector may
+  remain, and sector masking does not itself de-identify DICOM metadata.
+  The accompanying technical manuscript is unrefereed; a software archive
+  does not imply peer review.
+  Pretrained weights are not distributed with this release because the
+  contributing datasets have differing access and reuse conditions.
+  Researchers must obtain source datasets independently from their providers.
+  Requests for scan-sector annotations should be directed to the EchoROI
+  authors; availability is assessed for each dataset under the applicable
+  agreements and institutional permissions.
+  Pretrained weights and source datasets are excluded from this release.
+  The MIT licence applies to the released software, not source datasets or
+  separately authorised annotation packages.
 keywords:
   - "medical imaging"
   - "ultrasound"
   - "deep learning"
   - "segmentation"
+  - "scan-sector masking"
   - "U-Net"
   - "de-identification"
   - "echocardiogram"

@@ -1,0 +1,3 @@
+dataset,dataset_version,source_relative_path,frame_index,frame_index_base,source_height,source_width,extraction_recipe,annotation_path,annotation_sha256
+synthetic-demo,example-v1,synthetic/clip-a/frame-000000.png,0,0,64,80,recipes/synthetic-a.json,masks/synthetic-a.png,0000000000000000000000000000000000000000000000000000000000000000
+synthetic-demo,example-v1,synthetic/clip-b/frame-000001.png,2,1,96,128,recipes/synthetic-b.json,polygons/synthetic-b.json,1111111111111111111111111111111111111111111111111111111111111111

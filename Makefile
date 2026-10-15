@@ -1,5 +1,11 @@
 .PHONY: install dev test lint clean train predict evaluate benchmark onnx
 
+# Checkpoints and datasets are local resources, not supplied by a clone.
+# See docs/RETRAINING.md; set MODEL_PATH for inference and evaluation.
+MODEL_PATH ?= path/to/model.keras
+IMAGE_DIR ?= data/images
+MASK_DIR ?= data/masks
+
 # ------- Installation -------
 install:
 	pip install -e .
@@ -33,9 +39,9 @@ train:
 
 # ------- Inference -------
 predict:
-	@echo "Usage: make predict INPUT=path/to/image.png"
+	@echo "Requires a local checkpoint: make predict MODEL_PATH=path/to/model.keras INPUT=path/to/image.png"
 	echoroi predict \
-		--model-path models/echoroi_unified.keras \
+		--model-path "$(MODEL_PATH)" \
 		--input $(INPUT) \
 		--output results/ \
 		--visualize --deidentify
@@ -43,21 +49,22 @@ predict:
 # ------- Evaluation -------
 evaluate:
 	echoroi evaluate \
-		--model-path models/echoroi_unified.keras \
-		--image-dir data/images \
-		--mask-dir data/masks \
+		--model-path "$(MODEL_PATH)" \
+		--image-dir "$(IMAGE_DIR)" \
+		--mask-dir "$(MASK_DIR)" \
 		--output evaluation_results
 
 # ------- Benchmark -------
 benchmark:
-	@echo "Usage: make benchmark IMAGE=path/to/image.png"
+	@echo "Requires a local checkpoint: make benchmark MODEL_PATH=path/to/model.keras IMAGE=path/to/image.png"
 	echoroi benchmark \
-		--model-path models/echoroi_unified.keras \
+		--model-path "$(MODEL_PATH)" \
 		--image-path $(IMAGE) \
 		--num-runs 20
 
 # ------- ONNX Conversion -------
 onnx:
+	@echo "Requires a local models/echoroi_unified.keras checkpoint; see docs/RETRAINING.md"
 	python scripts/convert_to_onnx.py
 
 # ------- Multi-env testing (tox) -------
