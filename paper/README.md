@@ -8,7 +8,11 @@ external MIMIC dataset manuscript is a separate thesis contribution.
 The manuscript uses a neutral layout without a journal-specific build or
 submission workflow. `paper.docx` is generated from the source and bibliography.
 
-Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+This release includes neither pretrained weights nor source datasets.
+Researchers must obtain source datasets independently from their providers.
+Requests for scan-sector annotations may be directed to the EchoROI authors;
+availability depends on the applicable agreements and institutional
+permissions.
 
 See [annotation access](../docs/ANNOTATION_ACCESS.md),
 [retraining](../docs/RETRAINING.md), and the
@@ -24,9 +28,8 @@ pandoc paper.md --from=markdown --standalone --citeproc \
   --resource-path=. --fail-if-warnings --output=paper.docx
 ```
 
-Review the generated document before release or thesis incorporation. Any local
-`paper.pdf` is an ignored historical export, has not been regenerated, and is
-not part of the tracked release. A neutral PDF build remains to be verified.
+Review the generated document before release or thesis incorporation. Any local `paper.pdf` is ignored and is not part of the tracked release. A
+neutral PDF build remains to be verified.
 
 A Zenodo software record archives a specific software release, which can
 include this source manuscript. It does not imply peer review. A separate

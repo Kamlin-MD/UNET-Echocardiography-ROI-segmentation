@@ -48,9 +48,9 @@ and masks non-diagnostic image content using a U-Net-based model
 [@ronneberger2015unet]. The resulting outputs preserve the native scan-sector
 geometry while removing surrounding display content, enabling preprocessing for
 machine learning, privacy-aware sharing of teaching examples, and more
-consistent inputs for downstream analysis. The pretrained model targets the
-fan-shaped scan sector produced by phased-array cardiac probes and may
-generalise to similar curvilinear sector geometries, but is unlikely to
+consistent inputs for downstream analysis. The authors' reference model
+targets the fan-shaped scan sector produced by phased-array cardiac probes and
+may generalise to similar curvilinear sector geometries, but is unlikely to
 segment the rectangular field of view of linear-array probes without
 fine-tuning or retraining on appropriate annotations.
 
@@ -62,7 +62,11 @@ aggregate reference-run records, and tests, but not pretrained weights or
 source datasets. Users must train locally or otherwise obtain a checkpoint
 lawfully before applying the inference workflows.
 
-Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+This release includes neither pretrained weights nor source datasets.
+Researchers must obtain source datasets independently from their providers.
+Requests for scan-sector annotations should be directed to the EchoROI
+authors; availability is assessed for each dataset under the applicable
+agreements and institutional permissions.
 
 ![Raw echocardiographic frame](figures/figure_1a.png){width=48%}
 ![Predicted scan-sector mask](figures/figure_1b.png){width=48%}
@@ -94,10 +98,10 @@ development of a reusable automated workflow.
 
 `EchoROI` was developed for researchers who need a scriptable and adaptable way
 to standardise echocardiography inputs across heterogeneous sources. Rather
-than relying on fixed crop templates, the provided pretrained model has learnt
+than relying on fixed crop templates, the authors' reference model learned
 the sector boundary directly and uses the predicted mask to remove
 non-diagnostic content outside the scan
-sector. This is useful for privacy-preserving preprocessing, multi-source
+sector. This supports privacy-aware preprocessing, multi-source
 dataset harmonisation, and workflows where background overlays would otherwise
 consume model capacity or bias evaluation. The package targets users preparing
 echocardiography datasets for machine learning, benchmarking, or educational
@@ -151,13 +155,14 @@ echoroi predict \
   --deidentify
 ```
 
-For most echocardiography clips, sector geometry remains fixed throughout the
-cine loop. `EchoROI` therefore predicts the mask from a single representative
-frame and applies the same mask and crop logic across the full sequence. By
-default, the representative frame is chosen from the first few frames using
-grayscale Shannon entropy [@shannon1948], reducing compute cost and helping
-avoid blank or transition frames. Without `--deidentify`, only the predicted
-binary mask is saved, allowing users to apply it in custom downstream
+For echocardiography clips with fixed sector geometry, the DICOM preprocessing
+notebook selects a representative frame using grayscale Shannon entropy
+[@shannon1948] and applies the predicted sector mask across the sequence.
+This notebook workflow reduces repeated inference and helps avoid blank or
+transition frames. The image-prediction CLI shown above operates on supplied
+image files; representative-frame selection is not a CLI default. Without
+`--deidentify`, only the predicted binary mask is saved, allowing users to
+apply it in custom downstream
 workflows or inspect residual traces such as ECG that may cross the sector
 boundary.
 The model performs sector segmentation only and does not attempt OCR or
@@ -195,13 +200,20 @@ The saved run's source code selects checkpoints by validation IoU; batch size
 8 is the current command-line default, not the recorded run setting.
 There is no saved per-file manifest establishing which collection members
 were used or excluded, so the 149-pair difference cannot be attributed to a
-particular source from these records. A historical summary edit at commit
-`1a36462` changed counts from 1,206 to 1,355 without changing other summary
-fields; the later reference-run update at `67d6ecc` records 1,206 pairs
-alongside new logs and metrics. The intermediate summary is not independent
-evidence of training on the entire inventory.
+particular source from these records. The detailed reconciliation of collection
+counts and saved run records is provided in `training_results/README.md`.
+A collection count alone does not establish the membership of a training run.
 
 # Validation and Reuse
+
+The documented workflow is to obtain source datasets independently from their
+providers; request any available sector masks from the authors; use the
+authorised manifest and decoding recipe to match each mask to its original
+native decoded frame; train and evaluate locally using the
+[retraining instructions](../docs/RETRAINING.md); and optionally export the
+trained checkpoint to ONNX. Neither the source datasets nor pretrained
+weights are included. Annotation availability depends on provider and
+institutional permissions; the private subset may be unavailable.
 
 The authors' saved reference-model evaluation reports the following results
 on the 242-sample validation split described in the evaluation notebook:
@@ -216,29 +228,28 @@ on the 242-sample validation split described in the evaluation notebook:
 
 These figures come from the validation split used for model selection, so they
 should be interpreted as software validation rather than a definitive external
-benchmark. The software is suitable for routine preprocessing workflows, and
-implementation-specific benchmarking examples are provided in the repository
-notebooks.
+benchmark. These results support the feasibility of sector masking on the
+recorded validation data. Performance on new sites, scanner layouts, and
+acquisition conditions requires separate assessment. Implementation-specific
+benchmarking examples are provided in the repository notebooks.
 
 The values above are thresholded, pooled-pixel metrics from
 `training_results/metrics.json`. The training log instead records best soft
 validation Dice 0.98726451397 and IoU 0.97487163544, both at zero-based epoch 47.
-The model card also retains previously reported values (Dice 0.9880 and IoU
-0.9763), matching the older `metrics.json` at `5e10245`, whose summary records
-1,206 pairs and batch size 16. That earlier source selected by validation
-Dice; the later source at `61e447b` introduced IoU selection and source
-stratification. These experiments and metric summaries should not be treated
-as interchangeable; neither provides a released per-file split and
-evaluation-checkpoint hash.
+The complete original training membership is unresolved and the private
+subset may be unavailable, so retraining does not guarantee the identical
+checkpoint or reported metrics. No released per-file split or
+evaluation-checkpoint hash establishes exact reproduction. These are results
+of the documented reference experiment, not an external test benchmark; see
+the [reference-run records](../training_results/README.md) for the saved
+configuration and metric definitions.
 
 The repository supports reuse of the software once researchers have obtained
 authorised data, annotations, and a local checkpoint. It includes example
 notebooks, aggregate evaluation metrics, training logs, and tests.
 The access and retraining documentation describes a pathway for new training
-runs, not a guarantee of immediate or exact reproduction of the reference
-checkpoint. Exact reproduction would additionally require the original
-per-file membership, extraction recipes, split assignments, software environment,
-and random training state. Source code and aggregate records
+runs, not a guarantee of exact reproduction of the reference checkpoint.
+Source code and aggregate records
 are available at
 [https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation](https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation).
 The included evaluation command and DICOM-to-NPZ notebook support end-to-end

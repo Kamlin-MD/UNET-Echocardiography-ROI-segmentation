@@ -1,12 +1,18 @@
 # Retraining with authorised data
 
-This is a pathway for a **new, locally trained model**, not a complete recipe
-for exact reproduction of the authors' reference checkpoint. The saved run
-has 1,206 pairs, while the documented collection has 1,355; no released
-per-file membership/split manifest resolves the difference. Read the
-[run-record reconciliation](../training_results/README.md) first.
+This is a pathway for a **new, locally trained model**, not a guarantee of
+reproducing the authors' reference checkpoint. This release includes neither
+pretrained weights nor source datasets. Researchers must obtain source
+datasets independently from their providers and may request corresponding
+sector masks from the authors; annotation availability depends on applicable
+agreements and institutional permissions.
 
-Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+The documented collection contains 1,355 frame-mask pairs, while saved
+reference-run records report 1,206 loaded pairs and do not identify their
+complete file membership. The complete original training membership is
+unresolved and the private subset may be unavailable, so retraining does not
+guarantee the identical checkpoint or reported metrics. See the
+[reference-run records](../training_results/README.md).
 
 ## 1. Acquire source datasets independently
 
@@ -61,11 +67,11 @@ Keep a private mapping from those basenames to manifest rows. Verify a
 one-to-one image/mask set with identical native dimensions before training;
 the existing loader intersects basenames and can warn/skip unreadable files,
 so a successful training command alone is not evidence of a complete pairing.
-The source-stratification helper infers source names from historical filename
-prefixes (`dataset_label_from_filename`); verify labels for every prepared
-filename. Arbitrary renaming can silently place files in the wrong stratum.
-Preserve the authorised historical naming convention or use a separately
-reviewed training workflow with explicit source labels.
+The source-stratification helper infers source names from filename prefixes
+(`dataset_label_from_filename`); verify labels for every prepared filename.
+Arbitrary renaming can silently place files in the wrong stratum. Preserve
+the expected source prefixes or use a separately reviewed training workflow
+with explicit source labels.
 
 Training preprocessing reads grayscale images with OpenCV, scales them by
 `1/255`, and preserves aspect ratio at 256 x 256 with zero padding. For native
@@ -91,8 +97,8 @@ is 8. Current training uses a source-stratified 80/20 split with
 `random_state=42`, composite BCE + Dice + TV loss, and best `val_iou_score`
 checkpoint selection. It does not fix all initialisation/device randomness.
 Record file membership, actual loaded counts, split assignments, environment,
-hardware, seeds, and checkpoint hashes for your run. Avoid overwriting the
-historical `training_results/` directory.
+hardware, seeds, and checkpoint hashes for your run. Use a separate results
+directory for the new run.
 
 ## 6. Evaluate the saved checkpoint
 

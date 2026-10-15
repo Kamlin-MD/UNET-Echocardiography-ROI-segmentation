@@ -21,9 +21,13 @@
 
 This card describes the authors' evaluated reference model, not a checkpoint
 supplied by the public release. The release supplies software with Keras/ONNX
-support and aggregate run records, not pretrained weights or source datasets.
+support and aggregate run records. This release includes neither pretrained
+weights nor source datasets.
 
-Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+Researchers must obtain source datasets independently from their providers.
+Requests for scan-sector annotations may be directed to the EchoROI authors;
+availability is assessed for each dataset under the applicable agreements
+and institutional permissions.
 
 See [annotation access](docs/ANNOTATION_ACCESS.md) and
 [retraining](docs/RETRAINING.md). Access to a source dataset does not guarantee
@@ -62,8 +66,10 @@ access to the authors' annotations or the private institutional subset.
 The documented annotation collection contains 1,355 frame/mask pairs drawn
 from the sources below. This is a collection inventory, not the saved run's
 training membership: `training_results/dataset_summary.json` records 1,206
-loaded pairs, split into 964 training and 242 validation samples. No saved
-per-file split manifest explains the difference.
+loaded pairs, split into 964 training and 242 validation samples. The complete
+original training membership is unresolved and the private subset may be
+unavailable, so retraining does not guarantee the identical checkpoint or
+reported metrics.
 
 | Dataset | Frames | Access |
 |:--------|-------:|:-------|
@@ -97,14 +103,12 @@ sequence was included.
 
 ## Performance
 
-### Previously reported validation metrics
+### Additional reported validation summary
 
-The following original model-card values are retained for transparency. They
-match the rounded historical `training_results/metrics.json` at `5e10245`
-(21 February 2026), whose summary records 1,206 pairs, batch size 16,
-and 964 training / 242 validation samples. That source selected checkpoints
-by validation Dice. They are not the current March IoU-selected run's metrics.
-Neither run has a released per-file split or evaluation-checkpoint hash.
+An additional validation summary reports the following values. Available
+records do not establish that it used the same checkpoint, split, or metric
+calculation as the documented reference-run evaluation below; the results
+must not be interchanged.
 
 | Metric | Value |
 |:-------|------:|
@@ -114,14 +118,15 @@ Neither run has a released per-file split or evaluation-checkpoint hash.
 | Sensitivity | 0.9894 |
 | Specificity | 0.9914 |
 
-The saved reference-run evaluation instead reports Dice **0.9883648526**,
+The documented reference-run evaluation reports Dice **0.9883648526**,
 IoU **0.9769973445**, accuracy **0.9907418243**, sensitivity **0.9891411356**,
 and specificity **0.9917980637**. These are thresholded, pooled-pixel
 evaluation metrics, not the soft batch metrics in the training log.
-See the [run-record reconciliation](training_results/README.md) for evidence
-and remaining provenance limitations; neither table is an external test result.
+See the [reference-run records](training_results/README.md) for the saved
+configuration and remaining provenance limitations. Neither table is an
+external test result.
 
-### Saved March reference-run configuration
+### Documented reference-run configuration
 
 | Parameter | Value |
 |:----------|:------|
@@ -140,8 +145,10 @@ and remaining provenance limitations; neither table is an external test result.
   `val_iou_score` checkpoint, not `val_dice_coefficient`) and
   may modestly overestimate generalisation performance.
 - Batch size 16 is recorded for the saved run; batch size 8 is a CLI/Makefile
-  default, not that run's configuration. Exact checkpoint reproduction is not
-  established by the released records.
+  default, not that run's configuration.
+- The complete original training membership is unresolved and the private
+  subset may be unavailable, so retraining does not guarantee the identical
+  checkpoint or reported metrics.
 - Performance was not stratified by dataset source, vendor, or view type.
 
 ## Known Failure Modes

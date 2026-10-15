@@ -86,17 +86,6 @@ The technical manuscript may accompany the software archive, but remains
 unrefereed. If deposited separately as a technical report, link the two records
 and keep the software and report citations distinct.
 
-### Historical distribution is separate
-
-Removing current checkpoints with `git rm --cached` preserves local files
-and excludes them from the next release tree. It does **not** retract older
-GitHub tags, release assets, Git/LFS objects, forks, downloads, or Zenodo
-deposits. Inventory those distributions separately with the authors and
-institutional data-governance contacts; determine any takedown, access
-restriction, or archival-record correction with the relevant hosting provider.
-Do not rewrite history or claim historical downloads have been removed as
-part of this documentation change.
-
 Use the [annotation-access policy](docs/ANNOTATION_ACCESS.md) for new requests.
 Source-data access does not automatically authorise annotation distribution.
 

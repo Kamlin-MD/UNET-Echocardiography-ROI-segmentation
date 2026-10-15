@@ -1,6 +1,10 @@
 # Source datasets and scan-sector annotation access
 
-Pretrained weights are not distributed with this release because the contributing datasets have differing access and reuse conditions. Researchers must obtain source datasets independently from their providers. Requests for scan-sector annotations should be directed to the EchoROI authors; availability is assessed for each dataset under the applicable agreements and institutional permissions.
+This release includes neither pretrained weights nor source datasets.
+Researchers must obtain each source dataset independently from its provider.
+Requests for scan-sector annotations should be directed to the EchoROI
+authors; availability is assessed for each dataset under the applicable
+agreements and institutional permissions.
 
 Contact **kamlin.ekambaram@gmail.com** with your institution, intended use,
 dataset names, exact provider release/version, access authorisation, and the
@@ -31,7 +35,10 @@ records; it must be resolved during a request, not guessed from the paper year.
 | HMC-QU (149) | Contact the dataset authors via the [multi-view echocardiography publication](https://doi.org/10.1016/j.bspc.2023.105448) | Exact HMC-QU release/view subset and file checksums; author-run version not recorded | Not publicly distributed here; requires provider and institutional assessment |
 | Private institutional subset (50) | EchoROI authors and the originating institution; no public acquisition route | Institution-approved internal subset/version, shared only through authorised channels | No public distribution promised; both source images and annotations require institutional permission |
 
-The private subset may not be available to external researchers at all.
+The private subset may not be available to external researchers at all. The
+complete original training membership is unresolved and the private subset may
+be unavailable, so retraining does not guarantee the identical checkpoint or
+reported metrics.
 Consent for the original study does not establish permission for public
 redistribution. A run using only accessible sources is a new experiment and
 must report its changed composition; it cannot be claimed to reproduce the
