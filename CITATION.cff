@@ -17,7 +17,8 @@ authors:
   given-names: "Rensu"
   affiliation: "Department of Electrical Engineering, Faculty of Engineering, Stellenbosch University, South Africa"
 title: "EchoROI: Scan-sector Segmentation and De-identification for Echocardiography"
-version: 0.1.0
+doi: 10.5281/zenodo.23423164
+version: 1.0.1
 date-released: 2026-02-21
 url: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
 repository-code: "https://github.com/Kamlin-MD/UNET-Echocardiography-ROI-segmentation"
